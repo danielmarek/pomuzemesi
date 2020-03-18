@@ -5,12 +5,14 @@ import 'package:maps_launcher/maps_launcher.dart';
 import 'data.dart';
 import 'model.dart';
 import 'misc.dart';
+import 'widget_misc.dart';
 
 class DetailPage extends StatefulWidget {
-  DetailPage({Key key, this.title, this.task}) : super(key: key);
+  DetailPage({Key key, this.title, this.task, @required this.cameFrom}) : super(key: key);
 
   final String title;
   final Task task;
+  final int cameFrom;
 
   @override
   _DetailPageState createState() => _DetailPageState();
@@ -138,6 +140,7 @@ class _DetailPageState extends State<DetailPage> {
           ))
         ],
       ),
+      bottomNavigationBar: bottomNavBar(context, widget.cameFrom),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Help',
         child: Icon(Icons.help),

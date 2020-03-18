@@ -5,6 +5,7 @@ import 'testdata.dart';
 import 'data.dart';
 import 'skills_page.dart';
 import 'profile_page.dart';
+import 'widget_misc.dart';
 
 class SettingsPage extends StatefulWidget {
   SettingsPage({Key key, this.title}) : super(key: key);
@@ -59,6 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
           }, //o
         ),
       ]),
+      bottomNavigationBar: bottomNavBar(context, SETTINGS_PAGE),
       floatingActionButton: FloatingActionButton(
         backgroundColor: PRIMARY_COLOR,
         tooltip: 'Help',

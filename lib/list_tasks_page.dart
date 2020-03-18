@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:pomuzemesi/misc.dart';
 import 'package:pomuzemesi/task_detail_page.dart';
 
 import 'model.dart';
+import 'widget_misc.dart';
 
 class ListPage extends StatefulWidget {
   ListPage({Key key, this.title, this.getTasks}) : super(key: key);
@@ -26,6 +28,7 @@ class _ListPageState extends State<ListPage> {
           MaterialPageRoute(
             builder: (context) => DetailPage(
               task: task,
+              cameFrom: TASKS_PAGE,
             ),
           ),
         ).then((_) {
@@ -53,6 +56,7 @@ class _ListPageState extends State<ListPage> {
         ),
       ),
       body: ListView(children: buildTaskTiles(widget.getTasks())),
+      bottomNavigationBar: bottomNavBar(context, TASKS_PAGE),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Help',
         child: Icon(Icons.help_outline),

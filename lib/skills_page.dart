@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'data.dart';
 import 'testdata.dart';
 import 'misc.dart';
+import 'widget_misc.dart';
 
 class SkillsPage extends StatefulWidget {
   SkillsPage({Key key, this.title}) : super(key: key);
@@ -47,6 +48,7 @@ class _SkillsPageState extends State<SkillsPage> {
       body: ListView(
         children: allTiles(),
       ),
+      bottomNavigationBar: bottomNavBar(context, SETTINGS_PAGE),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Help',
         backgroundColor: PRIMARY_COLOR,

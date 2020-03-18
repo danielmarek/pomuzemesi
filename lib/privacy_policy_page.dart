@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pomuzemesi/misc.dart';
 
-import 'data.dart';
-import 'model.dart';
+import 'widget_misc.dart';
 
 class PrivacyPolicyPage extends StatefulWidget {
   PrivacyPolicyPage({Key key, this.title}) : super(key: key);
@@ -29,6 +29,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
           ),
         ],
       ),
+      bottomNavigationBar: bottomNavBar(context, PRIVACY_POLICY_PAGE),
     );
   }
 }

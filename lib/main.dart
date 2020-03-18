@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:pomuzemesi/privacy_policy.dart';
 
 import 'data.dart';
 import 'task_detail_page.dart';
-import 'list_tasks_page.dart';
 import 'model.dart';
-import 'settings_page.dart';
 import 'misc.dart';
+import 'widget_misc.dart';
 
 void main() {
   Data.initWithRandomData();
@@ -46,6 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
           MaterialPageRoute(
             builder: (context) => DetailPage(
               task: task,
+              cameFrom: HOME_PAGE,
             ),
           ),
         ).then((_) {
@@ -85,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
               style: TextStyle(fontSize: 15, color: Colors.white),
             ),
             onPressed: () {
-              launchTaskSearch();
+              launchTaskSearch(context);
             },
           )),
     ];
@@ -98,17 +97,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ] +
         allTaskTiles(Data.myTasks(), context);
-  }
-
-  void launchTaskSearch() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ListPage(
-            title: "Co je potřeba s mojí specializací",
-            getTasks: Data.mySpecTasks),
-      ),
-    );
   }
 
   @override
@@ -128,60 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: PRIMARY_COLOR,
       ),
       body: ListView(children: <Widget>[] + centerContent + []),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            title: Text('Moje úkoly'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.business),
-            title: Text('Úkoly'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            title: Text('Můj profil'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.info_outline),
-            title: Text('O aplikaci'),
-          ),
-        ],
-        currentIndex: 0,
-        backgroundColor: PRIMARY_COLOR,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.black,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              return;
-            case 1:
-              launchTaskSearch();
-              return;
-            case 2:
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SettingsPage(
-                    title: "Můj profil a dovednosti",
-                  ),
-                ),
-              );
-              return;
-            case 3:
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PrivacyPolicyPage(
-                    title: "Privacy Policy",
-                  ),
-                ),
-              );
-              return;
-          }
-        },
-      ),
+      bottomNavigationBar: bottomNavBar(context, 0),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Refresh',
         backgroundColor: PRIMARY_COLOR,

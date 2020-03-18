@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'data.dart';
 import 'model.dart';
 import 'misc.dart';
+import 'widget_misc.dart';
 
 class ProfilePage extends StatefulWidget {
   ProfilePage({Key key, this.title}) : super(key: key);
@@ -183,6 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
+      bottomNavigationBar: bottomNavBar(context, SETTINGS_PAGE),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Help',
         child: Icon(Icons.help),
