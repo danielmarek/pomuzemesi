@@ -1,4 +1,4 @@
-package si.pomuzeme.pomuzemesi
+package cz.applifting.pomuzemesi
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity
