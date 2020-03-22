@@ -112,7 +112,7 @@ class _DetailPageState extends State<DetailPage> {
                 ]),
           ),
           Container(
-            padding: EdgeInsets.only(left: 15.0, right: 15.0),
+            padding: EdgeInsets.only(left: screenWidth * LEFT_OF_TEXT_BLOCK, right: screenWidth * LEFT_OF_TEXT_BLOCK),
             height: 100, // FIXME
             //width: 200,
             child: Text(

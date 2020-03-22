@@ -109,8 +109,8 @@ class _MyHomePageState extends State<MyHomePage> {
             style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
       ),
       ListTile(
-          leading: SizedBox(width: 30),
-          trailing: SizedBox(width: 30),
+          leading: SizedBox(width: screenWidth * LEFT_OF_BUTTON),
+          trailing: SizedBox(width: screenWidth * LEFT_OF_BUTTON),
           title: MaterialButton(
             color: SECONDARY_COLOR,
             child: Text(
