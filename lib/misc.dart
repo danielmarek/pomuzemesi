@@ -12,6 +12,12 @@ int TASKS_PAGE = 1;
 int SETTINGS_PAGE = 2;
 int PRIVACY_POLICY_PAGE = 3;
 
+// Sizes relative to screen width.
+double FONT_SIZE_NORMAL = 0.04;
+double FONT_SIZE_SMALLER = 0.03;
+double LEFT_OF_BUTTON = 0.1;
+double LEFT_OF_TEXT_BLOCK = 0.04;
+
 void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
   if (Platform.isIOS) iosPermission(firebaseMessaging);
 

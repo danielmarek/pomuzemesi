@@ -13,8 +13,11 @@ class PrivacyPolicyPage extends StatefulWidget {
 }
 
 class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
+  double screenWidth;
+
   @override
   Widget build(BuildContext context) {
+    screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
         title: Text("Privacy Policy"),
@@ -25,7 +28,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
         children: <Widget>[
           Text(
             "Privacy policy will be here.",
-            style: TextStyle(fontSize: 15),
+            style: TextStyle(fontSize: screenWidth * FONT_SIZE_SMALLER),
           ),
         ],
       ),

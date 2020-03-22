@@ -8,7 +8,8 @@ import 'misc.dart';
 import 'widget_misc.dart';
 
 class DetailPage extends StatefulWidget {
-  DetailPage({Key key, this.title, this.task, @required this.cameFrom}) : super(key: key);
+  DetailPage({Key key, this.title, this.task, @required this.cameFrom})
+      : super(key: key);
 
   final String title;
   final Task task;
@@ -19,6 +20,8 @@ class DetailPage extends StatefulWidget {
 }
 
 class _DetailPageState extends State<DetailPage> {
+  double screenWidth;
+
   Widget isMineSection() {
     if (!widget.task.isMine) {
       if (widget.task.volunteersBooked < widget.task.volunteersRequired) {
@@ -27,7 +30,8 @@ class _DetailPageState extends State<DetailPage> {
           color: SECONDARY_COLOR,
           child: Text(
             "Pomoci s tímto úkolem.",
-            style: TextStyle(fontSize: 15, color: Colors.white),
+            style: TextStyle(
+                fontSize: screenWidth * FONT_SIZE_NORMAL, color: Colors.white),
           ),
           onPressed: () {
             setState(() {
@@ -44,7 +48,10 @@ class _DetailPageState extends State<DetailPage> {
                 Text(
                   'Tento úkol je již plně obsazen.',
                   style: TextStyle(
-                      color: Colors.blue, fontWeight: FontWeight.bold),
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * FONT_SIZE_NORMAL,
+                  ),
                 ),
               ],
             ));
@@ -56,12 +63,17 @@ class _DetailPageState extends State<DetailPage> {
         children: <Widget>[
           Icon(Icons.info, color: PRIMARY_COLOR),
           Text('Toto je můj úkol.',
-              style: TextStyle(color: PRIMARY_COLOR, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: PRIMARY_COLOR,
+                  fontWeight: FontWeight.bold,
+                  fontSize: screenWidth * FONT_SIZE_NORMAL)),
           MaterialButton(
             color: SECONDARY_COLOR,
             child: Text(
               "Odebrat tento úkol.",
-              style: TextStyle(fontSize: 15, color: Colors.white),
+              style: TextStyle(
+                  fontSize: screenWidth * FONT_SIZE_NORMAL,
+                  color: Colors.white),
             ),
             onPressed: () {
               setState(() {
@@ -76,6 +88,7 @@ class _DetailPageState extends State<DetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.task.description),
@@ -99,12 +112,12 @@ class _DetailPageState extends State<DetailPage> {
                 ]),
           ),
           Container(
-            padding: EdgeInsets.only(left: 15.0, right: 15.0),
-            height: 60, // FIXME
+            padding: EdgeInsets.only(left: screenWidth * LEFT_OF_TEXT_BLOCK, right: screenWidth * LEFT_OF_TEXT_BLOCK),
+            height: 100, // FIXME
             //width: 200,
             child: Text(
               "Je potřeba pomoci s lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL),
               softWrap: true,
             ),
           ),
@@ -130,7 +143,7 @@ class _DetailPageState extends State<DetailPage> {
             color: SECONDARY_COLOR,
             child: Text(
               "Otevřít mapu",
-              style: TextStyle(fontSize: 15, color: Colors.white),
+              style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL, color: Colors.white),
             ),
             onPressed: () {
               setState(() {
