@@ -57,6 +57,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   FirebaseMessaging firebaseMessaging = FirebaseMessaging();
+  double screenWidth;
 
   @override
   void initState() {
@@ -104,7 +105,8 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       ListTile(
         title: Text(
-            "Zatím jste se neujali žádného úkolu. Nějaký si vyberte, pak ho uvidíte tady."),
+            "Zatím jste se neujali žádného úkolu. Nějaký si vyberte, pak ho uvidíte tady.",
+            style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
       ),
       ListTile(
           leading: SizedBox(width: 30),
@@ -113,7 +115,8 @@ class _MyHomePageState extends State<MyHomePage> {
             color: SECONDARY_COLOR,
             child: Text(
               "Přidat úkol",
-              style: TextStyle(fontSize: 15, color: Colors.white),
+              style:
+                  TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL, color: Colors.white),
             ),
             onPressed: () {
               launchTaskSearch(context);
@@ -133,7 +136,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    firebaseMessaging.getToken().then((token){
+    screenWidth = MediaQuery.of(context).size.width;
+    firebaseMessaging.getToken().then((token) {
       print("Firebase token: $token");
     });
 

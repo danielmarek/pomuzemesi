@@ -25,6 +25,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final myControllerCity = TextEditingController(text: Data.me.city);
   final myControllerCityPart = TextEditingController(text: Data.me.cityPart);
 
+  double screenWidth;
+
   @override
   void dispose() {
     myControllerFirstName.dispose();
@@ -39,6 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -176,7 +179,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                   child: Text(
                     'Uložit',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontSize: screenWidth * FONT_SIZE_NORMAL),
                   ),
                 )
               ],
