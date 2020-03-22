@@ -59,6 +59,14 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           }, //o
         ),
+        ListTile(
+          title: Text('DEBUG: test crash'),
+          subtitle: Text(skillsStr),
+          leading: Icon(Icons.label_important), //onTap
+          onTap: () {
+            throw Exception("test crash");
+          }, //o
+        ),
       ]),
       bottomNavigationBar: bottomNavBar(context, SETTINGS_PAGE),
       floatingActionButton: FloatingActionButton(

@@ -1,4 +1,12 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/observer.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+
+import 'package:provider/provider.dart';
+
+import 'dart:io';
 
 import 'data.dart';
 import 'task_detail_page.dart';
@@ -6,15 +14,26 @@ import 'model.dart';
 import 'misc.dart';
 import 'widget_misc.dart';
 
+FirebaseAnalytics analytics = FirebaseAnalytics();
+
 void main() {
+  Crashlytics.instance.enableInDevMode = true;
+  FlutterError.onError = Crashlytics.instance.recordFlutterError;
   Data.initWithRandomData();
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  static FirebaseAnalytics analytics = FirebaseAnalytics();
+  static FirebaseAnalyticsObserver observer =
+      FirebaseAnalyticsObserver(analytics: analytics);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: analytics),
+      ],
       title: 'Pomuzeme.si',
       theme: ThemeData(
         primarySwatch: Colors.cyan,
@@ -32,6 +51,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  FirebaseMessaging firebaseMessaging = FirebaseMessaging();
+
+  @override
+  void initState() {
+    super.initState();
+    firebaseCloudMessagingSetUpListeners(firebaseMessaging);
+  }
+
   ListTile taskToTile(Task task, BuildContext context) {
     return ListTile(
       title: Text(task.description),
@@ -101,6 +128,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    firebaseMessaging.getToken().then((token){
+      print("Firebase token: $token");
+    });
+
     List<Widget> centerContent;
     if (Data.myTasks().length > 0) {
       centerContent = buildCenterContentWithTasks();
