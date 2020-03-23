@@ -7,7 +7,6 @@ import 'misc.dart';
 import 'settings_page.dart';
 import 'privacy_policy_page.dart';
 
-
 void launchTaskSearch(BuildContext context) {
   Navigator.push(
     context,
@@ -75,4 +74,20 @@ BottomNavigationBar bottomNavBar(BuildContext context, int pageId) {
       }
     },
   );
+}
+
+ListTile buttonListTile(String text, double screenWidth, Function onPressed) {
+  return ListTile(
+      title: SizedBox(
+          height: screenWidth * 0.1,
+          child: MaterialButton(
+            color: SECONDARY_COLOR,
+            child: Text(
+              text,
+              style: TextStyle(
+                  fontSize: screenWidth * FONT_SIZE_NORMAL,
+                  color: Colors.white),
+            ),
+            onPressed: onPressed,
+          )));
 }
