@@ -151,39 +151,27 @@ class _ProfilePageState extends State<ProfilePage> {
                     return null;
                   },
                 )),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                RaisedButton(
-                  color: SECONDARY_COLOR,
-                  onPressed: () {
-                    if (_formKey.currentState.validate()) {
-                      // If the form is valid, display a Snackbar.
-                      //Scaffold.of(context)
-                      //    .showSnackBar(SnackBar(content: Text('Zpracovávám')));
-                      //_formKey.currentState.
-                      Set<int> mySkills = Data.me.skillIDs;
-                      Volunteer updatedMe = Volunteer(
-                        firstName: myControllerFirstName.text,
-                        lastName: myControllerLastName.text,
-                        phone: myControllerPhone.text,
-                        street: myControllerStreet.text,
-                        streetNumber: myControllerStreetNumber.text,
-                        city: myControllerCity.text,
-                        cityPart: myControllerCityPart.text,
-                        skillIDs: mySkills,
-                      );
-                      Data.saveMyProfile(updatedMe);
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  child: Text(
-                    'Uložit',
-                    style: TextStyle(color: Colors.white, fontSize: screenWidth * FONT_SIZE_NORMAL),
-                  ),
-                )
-              ],
-            ),
+            buttonListTile('Uložit', screenWidth, () {
+              if (_formKey.currentState.validate()) {
+                // If the form is valid, display a Snackbar.
+                //Scaffold.of(context)
+                //    .showSnackBar(SnackBar(content: Text('Zpracovávám')));
+                //_formKey.currentState.
+                Set<int> mySkills = Data.me.skillIDs;
+                Volunteer updatedMe = Volunteer(
+                  firstName: myControllerFirstName.text,
+                  lastName: myControllerLastName.text,
+                  phone: myControllerPhone.text,
+                  street: myControllerStreet.text,
+                  streetNumber: myControllerStreetNumber.text,
+                  city: myControllerCity.text,
+                  cityPart: myControllerCityPart.text,
+                  skillIDs: mySkills,
+                );
+                Data.saveMyProfile(updatedMe);
+                Navigator.of(context).pop();
+              }
+            }),
           ],
         ),
       ),

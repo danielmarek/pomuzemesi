@@ -108,20 +108,9 @@ class _MyHomePageState extends State<MyHomePage> {
             "Zatím jste se neujali žádného úkolu. Nějaký si vyberte, pak ho uvidíte tady.",
             style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
       ),
-      ListTile(
-          leading: SizedBox(width: screenWidth * LEFT_OF_BUTTON),
-          trailing: SizedBox(width: screenWidth * LEFT_OF_BUTTON),
-          title: MaterialButton(
-            color: SECONDARY_COLOR,
-            child: Text(
-              "Přidat úkol",
-              style:
-                  TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL, color: Colors.white),
-            ),
-            onPressed: () {
-              launchTaskSearch(context);
-            },
-          )),
+      buttonListTile("Přidat úkol", screenWidth, () {
+        launchTaskSearch(context);
+      }),
     ];
   }
 

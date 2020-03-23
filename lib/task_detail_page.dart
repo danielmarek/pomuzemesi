@@ -25,20 +25,11 @@ class _DetailPageState extends State<DetailPage> {
   Widget isMineSection() {
     if (!widget.task.isMine) {
       if (widget.task.volunteersBooked < widget.task.volunteersRequired) {
-        return ListTile(
-            title: MaterialButton(
-          color: SECONDARY_COLOR,
-          child: Text(
-            "Pomoci s tímto úkolem.",
-            style: TextStyle(
-                fontSize: screenWidth * FONT_SIZE_NORMAL, color: Colors.white),
-          ),
-          onPressed: () {
-            setState(() {
-              Data.assignTask(widget.task.id, true);
-            });
-          },
-        ));
+        return buttonListTile('Pomoci s tímto úkolem', screenWidth, () {
+          setState(() {
+            Data.assignTask(widget.task.id, true);
+          });
+        });
       } else {
         return ListTile(
             leading: Icon(Icons.info, color: Colors.blue),
@@ -70,7 +61,7 @@ class _DetailPageState extends State<DetailPage> {
           MaterialButton(
             color: SECONDARY_COLOR,
             child: Text(
-              "Odebrat tento úkol.",
+              'Odebrat tento úkol',
               style: TextStyle(
                   fontSize: screenWidth * FONT_SIZE_NORMAL,
                   color: Colors.white),
@@ -112,7 +103,9 @@ class _DetailPageState extends State<DetailPage> {
                 ]),
           ),
           Container(
-            padding: EdgeInsets.only(left: screenWidth * LEFT_OF_TEXT_BLOCK, right: screenWidth * LEFT_OF_TEXT_BLOCK),
+            padding: EdgeInsets.only(
+                left: screenWidth * LEFT_OF_TEXT_BLOCK,
+                right: screenWidth * LEFT_OF_TEXT_BLOCK),
             height: 100, // FIXME
             //width: 200,
             child: Text(
@@ -138,19 +131,11 @@ class _DetailPageState extends State<DetailPage> {
             ),
             subtitle: Text("${widget.task.organization.name}"),
           ),
-          ListTile(
-              title: MaterialButton(
-            color: SECONDARY_COLOR,
-            child: Text(
-              "Otevřít mapu",
-              style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL, color: Colors.white),
-            ),
-            onPressed: () {
-              setState(() {
-                MapsLauncher.launchQuery(widget.task.address);
-              });
-            },
-          ))
+          buttonListTile("Otevřít mapu", screenWidth, () {
+            setState(() {
+              MapsLauncher.launchQuery(widget.task.address);
+            });
+          }),
         ],
       ),
       bottomNavigationBar: bottomNavBar(context, widget.cameFrom),
