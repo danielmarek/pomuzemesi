@@ -91,3 +91,37 @@ ListTile buttonListTile(String text, double screenWidth, Function onPressed) {
             onPressed: onPressed,
           )));
 }
+
+Widget centeredTextOnlyScaffold(String title, String text) {
+  return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      body: Container(
+          child: Center(
+        child: new Text(
+          text,
+          textAlign: TextAlign.center,
+        ),
+      )));
+}
+
+void showDialogWithText(BuildContext context, String title, Function fn) async {
+  await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      }).then((val) {
+    fn();
+  });
+}

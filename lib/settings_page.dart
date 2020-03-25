@@ -7,6 +7,7 @@ import 'skills_page.dart';
 import 'profile_page.dart';
 import 'widget_misc.dart';
 
+
 class SettingsPage extends StatefulWidget {
   SettingsPage({Key key, this.title}) : super(key: key);
 
@@ -59,14 +60,16 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           }, //o
         ),
-        ListTile(
-          title: Text('DEBUG: test crash'),
-          subtitle: Text(skillsStr),
-          leading: Icon(Icons.label_important), //onTap
-          onTap: () {
-            throw Exception("test crash");
-          }, //o
-        ),
+        CheckboxListTile(
+            title: Text('Dostávat notifikace do aplikace'),
+            subtitle: Text("V opačném případě budete dostávat SMS"),
+            secondary: Icon(Icons.notifications),
+            value: Data.getNotifications,
+            onChanged: (val) {
+              setState(() {
+                Data.toggleNotifications();
+              });
+            }),
       ]),
       bottomNavigationBar: bottomNavBar(context, SETTINGS_PAGE),
       floatingActionButton: FloatingActionButton(
