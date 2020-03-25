@@ -11,6 +11,10 @@ class Data {
   static List<Skill> skills;
   static Volunteer me;
 
+  // Overen organizaci
+  static bool authorized = false;
+  static bool getNotifications = true;
+
   static void assignTask(int id, bool assign) {
     tasks[id].isMine = assign;
     if (assign) {
@@ -50,6 +54,10 @@ class Data {
     } else {
       me.skillIDs.add(skillID);
     }
+  }
+
+  static void toggleNotifications() {
+    getNotifications = !getNotifications;
   }
 
   static void initWithRandomData() {

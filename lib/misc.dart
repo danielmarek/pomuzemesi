@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 
-
 Color PRIMARY_COLOR = Color(0xff64cde3);
 Color SECONDARY_COLOR = Color(0xffd48d22);
 
@@ -21,7 +20,7 @@ double LEFT_OF_TEXT_BLOCK = 0.04;
 void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
   if (Platform.isIOS) iosPermission(firebaseMessaging);
 
-  firebaseMessaging.getToken().then((token){
+  firebaseMessaging.getToken().then((token) {
     print("Firebase token: $token");
   });
 
@@ -40,11 +39,9 @@ void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
 
 void iosPermission(FirebaseMessaging firebaseMessaging) {
   firebaseMessaging.requestNotificationPermissions(
-      IosNotificationSettings(sound: true, badge: true, alert: true)
-  );
+      IosNotificationSettings(sound: true, badge: true, alert: true));
   firebaseMessaging.onIosSettingsRegistered
-      .listen((IosNotificationSettings settings)
-  {
+      .listen((IosNotificationSettings settings) {
     print("Settings registered: $settings");
   });
 }
