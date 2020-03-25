@@ -345,21 +345,25 @@ class MyHomePageState extends State<MyHomePage> {
     ));
   }
 
-  Widget buildLoading() {
+  Widget buildLoading(String text) {
     return Scaffold(
-        body: Container(
-            //color: PRIMARY_COLOR,
-            child: Center(
-                child: //Loading(
-                    //indicator: BallPulseIndicator(), size: 100.0, color: PRIMARY_COLOR),
-                    //),
-                    LoadingBouncingGrid.square(
-      borderColor: PRIMARY_COLOR,
-      borderSize: 3.0,
-      size: 30.0,
-      backgroundColor: PRIMARY_COLOR,
-      duration: Duration(milliseconds: 1000),
-    ))));
+        body: Center(
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+          LoadingBouncingGrid.square(
+            borderColor: PRIMARY_COLOR,
+            borderSize: 3.0,
+            size: 30.0,
+            backgroundColor: PRIMARY_COLOR,
+            duration: Duration(milliseconds: 1000),
+          ),
+          SizedBox(height: screenWidth / 16),
+          Text(
+            text,
+            style: TextStyle(fontSize: screenWidth * 0.04),
+          ),
+        ])));
   }
 
   Widget buildEnterSMS() {
@@ -426,7 +430,7 @@ class MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
     if (!loaded) {
-      return buildLoading();
+      return buildLoading('Načítám data ...');
     } else {
       // Login/registration flow.
       if (token == null || !registrationDone) {
@@ -434,15 +438,15 @@ class MyHomePageState extends State<MyHomePage> {
           case HomePageState.enterPhone:
             return buildEnterPhoneNumber();
           case HomePageState.waitForSMS:
-            return buildLoading();
+            return buildLoading("Odesílám požadavek o potvrzovací SMS ...");
           case HomePageState.enterSMS:
             return buildEnterSMS();
           case HomePageState.waitForToken:
-            return buildLoading();
+            return buildLoading("Čekám na potvrzení SMS kódu ...");
           case HomePageState.enterRegistrationDetails:
             return buildWithRegistrationForm();
           case HomePageState.uploadProfile:
-            return buildLoading();
+            return buildLoading("Posílám registraci na server ...");
         }
       } else {
         // Normal case of being in the app.
