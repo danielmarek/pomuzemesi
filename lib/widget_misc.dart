@@ -1,13 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:pomuzemesi/task_detail_page.dart';
 //import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 
 import 'data.dart';
 import 'misc.dart';
 import 'model.dart';
-
 
 BottomNavigationBarItem bottomNAvBarItemWithBadge({
   @required int number,
@@ -48,7 +47,8 @@ BottomNavigationBarItem bottomNAvBarItemWithBadge({
   );
 }
 
-BottomNavigationBar bottomNavBar(BuildContext context, int pageId, double screenWidth, Function(int) switchToTab) {
+BottomNavigationBar bottomNavBar(BuildContext context, int pageId,
+    double screenWidth, Function(int) switchToTab) {
   int otherRequestCount = Data.otherRequests.length;
   //otherRequestCount = 0;
   return BottomNavigationBar(
@@ -58,18 +58,18 @@ BottomNavigationBar bottomNavBar(BuildContext context, int pageId, double screen
         icon: Icon(Icons.assignment_ind),
         title: Text('Úkoly'),
       ),
-      otherRequestCount > 0 ? bottomNAvBarItemWithBadge(
-          number: otherRequestCount,
-          //number: 10,
-          icon: Icons.notifications,
-          text: 'Poptávky',
-        screenWidth: screenWidth,
-      ) :
-      BottomNavigationBarItem(
-        icon: Icon(Icons.notifications),
-        title: Text('Poptávky'),
-
-      ),
+      otherRequestCount > 0
+          ? bottomNAvBarItemWithBadge(
+              number: otherRequestCount,
+              //number: 10,
+              icon: Icons.notifications,
+              text: 'Poptávky',
+              screenWidth: screenWidth,
+            )
+          : BottomNavigationBarItem(
+              icon: Icon(Icons.notifications),
+              title: Text('Poptávky'),
+            ),
       BottomNavigationBarItem(
         icon: Icon(Icons.account_circle),
         title: Text('Profil'),
@@ -89,20 +89,53 @@ BottomNavigationBar bottomNavBar(BuildContext context, int pageId, double screen
   );
 }
 
-ListTile buttonListTile(String text, double screenWidth, Function onPressed, {bool light = false}) {
-  return ListTile(
-      title: SizedBox(
-          height: screenWidth * 0.1,
-          child: MaterialButton(
-            color: light ? Colors.white : SECONDARY_COLOR,
-            child: Text(
-              text,
-              style: TextStyle(
-                  fontSize: screenWidth * FONT_SIZE_NORMAL,
-                  color: light ? SECONDARY_COLOR : Colors.white),
-            ),
-            onPressed: onPressed,
-          )));
+enum MyButtonStyle {
+  normal,
+  light,
+  blue,
+}
+
+Widget myButton(
+  String text,
+  double screenWidth,
+  Function onPressed, {
+  MyButtonStyle style = MyButtonStyle.normal,
+  double widthFraction = 1.0,
+}) {
+  Color buttonColor, textColor;
+  switch (style) {
+    case MyButtonStyle.normal:
+      buttonColor = SECONDARY_COLOR;
+      textColor = Colors.white;
+      break;
+    case MyButtonStyle.light:
+      buttonColor = Colors.white;
+      textColor = SECONDARY_COLOR;
+      break;
+    case MyButtonStyle.blue:
+      buttonColor = Colors.white;
+      textColor = PRIMARY_COLOR2;
+      break;
+  }
+  return SizedBox(
+      height: screenWidth * 0.1,
+      width: widthFraction * screenWidth,
+      child: MaterialButton(
+        color: buttonColor,
+        child: Text(
+          text.toUpperCase(),
+          style: TextStyle(
+              fontSize: screenWidth * FONT_SIZE_NORMAL, color: textColor),
+        ),
+        onPressed: onPressed,
+      ));
+}
+
+Widget buttonListTile(String text, double screenWidth, Function onPressed,
+    {MyButtonStyle myButtonStyle = MyButtonStyle.normal}) {
+  return Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+    myButton(text, screenWidth, onPressed, style: myButtonStyle, widthFraction: 0.6)
+  ]);
 }
 
 Widget centeredTextOnlyScaffold(String title, String text) {
@@ -135,9 +168,9 @@ void showDialogWithText(BuildContext context, String title, Function fn) async {
           ],
         );
       }).then((val) {
-        if (fn != null) {
-          fn();
-        }
+    if (fn != null) {
+      fn();
+    }
   });
 }
 /*
@@ -186,144 +219,310 @@ SmartRefresher refresher({
   );
 }*/
 
-Widget cardBuilder({
-  @required BuildContext context,
-  @required Request request,
-  @required int cameFrom,
-  @required double screenWidth,
-  @required bool isDetail,
-  @required Function onReturn,
-  Function onAccept,
-  Function onDecline,
-}) {
-  double tenpx = screenWidth * 0.025;
-  // TODO relative font spacing size
-
-  TextStyle tsCardTop = TextStyle(
-    color: Color.fromARGB(154, 0, 0, 0),
-    letterSpacing: 1.5,
-    fontSize: tenpx,
-    fontWeight: FontWeight.w500,
+void sendEmailTo(String recipient) async {
+  final Email email = Email(
+    subject: 'Dobrý den',
+    body: 'Dobrý den, ',
+    recipients: [recipient],
   );
-  TextStyle tsTitle = TextStyle(
-    color: Colors.black87, //Color.fromARGB(223, 0, 0, 0),
-    letterSpacing: 0.15,
-    fontSize: tenpx * 2,
-    fontWeight: FontWeight.w500,
-  );
-  TextStyle tsDesc = TextStyle(
-    color: Colors.black87, //Color.fromARGB(223, 0, 0, 0),
-    letterSpacing: 0.5,
-    fontSize: tenpx * 1.6,
-    fontWeight: FontWeight.normal,
-  );
+  await FlutterEmailSender.send(email);
+}
 
-  int requestID = request.id;
-  String city = request.city == null ? "Město" : request.city;
-  String cityPart = request.cityPart == null ? "Čtvrť" : request.cityPart;
-  String date = 'Datum/Čas';
-  if (request.fulfillmentDate != null) {
-    var dateFormatter = new DateFormat('dd. MM. kk:mm');
-    date = dateFormatter.format(request.fulfillmentDate.toLocal());
-  }
-  String title = request.shortDescription;
-  if (title.length > 25) {
-    title = title.substring(0, 25) + ' ...';
-  }
-  String cityAndPart = "${city.toUpperCase()}, ${cityPart.toUpperCase()}";
-  if (cityAndPart.length > 22) {
-    cityAndPart = cityAndPart.substring(0, 18) + ' ...';
-  }
+Widget myDivider(double screenWidth) {
+  return Padding(
+      padding:
+          EdgeInsets.only(top: screenWidth * 0.04, bottom: screenWidth * 0.04),
+      child: Divider());
+}
 
-  List<Widget> widgets = List<Widget>();
+class CardBuilder {
+  static double screenWidth;
+  static TextStyle tsCardTop, tsTitle, tsDesc, tsDescSmaller;
 
-  if (isDetail) {
-    widgets
-        .add(Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
-      SizedBox(
-          height: screenWidth * 0.2,
-          width: screenWidth * 0.2,
-          child: InkWell(
-            child: Icon(Icons.clear),
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-          ))
-    ]));
+  static void setScreenWidth(double width) {
+    screenWidth = width;
+    double tenpx = screenWidth * 0.025;
+    // TODO relative font spacing size
+    tsCardTop = TextStyle(
+      color: Color.fromARGB(154, 0, 0, 0),
+      letterSpacing: 1.5,
+      fontSize: tenpx,
+      fontWeight: FontWeight.w500,
+    );
+    tsTitle = TextStyle(
+      color: Colors.black87, //Color.fromARGB(223, 0, 0, 0),
+      letterSpacing: 0.15,
+      fontSize: tenpx * 2,
+      fontWeight: FontWeight.w500,
+    );
+    tsDesc = TextStyle(
+      color: Colors.black87, //Color.fromARGB(223, 0, 0, 0),
+      letterSpacing: 0.5,
+      fontSize: tenpx * 1.6,
+      fontWeight: FontWeight.normal,
+    );
+    tsDescSmaller = TextStyle(
+      color: Colors.black54, //Color.fromARGB(223, 0, 0, 0),
+      letterSpacing: 0.5,
+      fontSize: tenpx * 1.3,
+      fontWeight: FontWeight.normal,
+    );
   }
 
-  widgets.addAll(<Widget>[
-    Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Text(cityAndPart, style: tsCardTop),
-        Text("$date", style: tsCardTop),
-      ],
-    ),
-    Padding(
-        padding: EdgeInsets.only(top: screenWidth * 0.025),
-        child: Row(
+  static List<Widget> descriptionWidgets({@required Request request}) {
+    // TODO also upravena
+    String text = 'Poptávka vytvořena: ${request.formatCreatedAt()}.';
+    return [
+          myDivider(screenWidth),
+          Row(children: <Widget>[Text(text, style: tsDescSmaller)]),
+          SizedBox(height: screenWidth / 32.0),
+          Row(
+            children: <Widget>[
+              Flexible(
+                  child: Text(
+                "${request.shortDescription}",
+                style: tsDesc,
+              ))
+            ],
+          ),
+        ] +
+        (request.allDetailsGranted
+            ? []
+            : [
+                SizedBox(height: screenWidth / 32.0),
+                ListTile(
+                  leading: Icon(Icons.info, color: PRIMARY_COLOR2),
+                  title: Text(
+                    'Neúplná data - poptávka bude koordinátorem upřesněna po přijetí.',
+                    style: TextStyle(color: PRIMARY_COLOR2),
+                  ),
+                )
+              ]);
+  }
+
+  static List<Widget> searchingVolunteersWidgets({@required Request request}) {
+    List<Widget> l = List<Widget>();
+    int vols = request.requiredVolunteerCount;
+    if (vols > 1) {
+      String text;
+      if (vols >= 5) {
+        text = 'Hledáme $vols dobrovolníků.';
+      } else if (vols > 1) {
+        text = 'Hledáme $vols dobrovolníky.';
+      } else {
+        'Hledáme 1 dobrovolníka.';
+      }
+      l.addAll(<Widget>[
+        myDivider(screenWidth),
+        Row(children: <Widget>[Text(text, style: tsDescSmaller)]),
+      ]);
+    }
+    return l;
+  }
+
+  static List<Widget> contactWidgets(
+      {@required Request request,
+      @required String title,
+      String email,
+      fullName,
+      phone}) {
+    debugPrint("contactWidgets: $email, $fullName, $phone");
+
+    List<Widget> l = List<Widget>();
+
+    if (fullName != null || email != null || phone != null) {
+      List<Widget> coordinatorItems = List<Widget>();
+      if (fullName != null) {
+        coordinatorItems.add(Text(fullName));
+      }
+      if (email != null) {
+        coordinatorItems.add(Text(email));
+      }
+      if (phone != null) {
+        coordinatorItems.add(Text(phone));
+      }
+
+      l.addAll(<Widget>[
+        myDivider(screenWidth),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Flexible(
-                child: Text(
-              "$title",
-              style: tsTitle,
-            ))
+            Text(title.toUpperCase(), style: tsCardTop),
           ],
-        ))
-  ]);
+        ),
+        ListTile(
+            title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: coordinatorItems)),
+      ] + (email == null ? [] : <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[myButton('email', screenWidth, (){
+            sendEmailTo(email);
+          }, style: MyButtonStyle.blue, widthFraction: 0.3)]
+        ),
+      ]));
+    }
+    return l;
+  }
 
-  if (isDetail) {
-    widgets.addAll([
-      Divider(),
+  static List<Widget> respondButtons(
+      {@required Request request, Function onAccept, Function onDecline}) {
+    debugPrint('request myState: ${request.myState}');
+    //r.myState in {accepted, pending_notification, rejected
+
+    Widget reject = myButton('Odmítnout', screenWidth, onDecline,
+        widthFraction: 0.4, style: MyButtonStyle.light);
+    Widget accept =
+        myButton('Přijmout', screenWidth, onAccept, widthFraction: 0.35);
+
+    List<Widget> widgets;
+    if (request.myState == 'pending_notification') {
+      widgets = <Widget>[
+        reject,
+        SizedBox(width: screenWidth * 0.05),
+        accept,
+      ];
+    } else if (request.myState == 'rejected') {
+      widgets = <Widget>[accept];
+    } else if (request.myState == 'accepted') {
+      widgets = <Widget>[reject];
+    } else {
+      debugPrint("Unknown request state: ${request.myState}");
+    }
+
+    List<Widget> l = List<Widget>();
+    l.addAll([
+        myDivider(screenWidth),
+        //SizedBox(height: screenWidth * 0.05,)
+    ]);
+    l.add(Row(mainAxisAlignment: MainAxisAlignment.end, children: widgets));
+    return l;
+  }
+
+  static Widget buildCard({
+    @required BuildContext context,
+    @required Request request,
+    @required int cameFrom,
+    @required bool isDetail,
+    @required Function onReturn,
+    Function onAccept,
+    Function onDecline,
+  }) {
+    int requestID = request.id;
+    String cityAndPart = request.formatCityAndPart();
+    String date = request.formatFulfillmentDate();
+    String title = request.formatTitle();
+
+    List<Widget> widgets = List<Widget>();
+
+    widgets.addAll(<Widget>[
       Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          Flexible(
-              child: Text(
-            "${request.shortDescription}",
-            style: tsDesc,
-          ))
+          Text(cityAndPart, style: tsCardTop),
+          Text("$date", style: tsCardTop),
         ],
       ),
-      Divider(),
-      MaterialButton(
-        child: Text('Přijmout'),
-        onPressed: onAccept,
-      ),
-      MaterialButton(
-        child: Text('Odmítnout'),
-        onPressed: onDecline,
-      ),
+      Padding(
+          padding: EdgeInsets.only(top: screenWidth * 0.025),
+          child: Row(
+            children: <Widget>[
+              Flexible(
+                  child: Text(
+                "$title",
+                style: tsTitle,
+              ))
+            ],
+          ))
     ]);
-  }
 
-  Widget content = Padding(
-    padding: EdgeInsets.all(screenWidth * 0.05),
-    child: Column(children: widgets),
-  );
+    if (isDetail) {
+      widgets.addAll(searchingVolunteersWidgets(request: request) +
+          descriptionWidgets(request: request) +
+          contactWidgets(
+            request: request,
+            title: 'Koordinátor',
+            email: request.coordinatorEmail,
+            fullName: request.formatCoordinatorFullName(),
+            // FIXME: coordinator should have a phone, when this is fixed on the backend.
+            phone: null,
+          ) +
+          contactWidgets(
+            request: request,
+            title: 'Odběratel',
+            fullName: request.subscriber,
+            phone: request.subscriberPhone,
+          ) +
+          respondButtons(
+            request: request,
+            onDecline: onDecline,
+            onAccept: onAccept,
+          ));
+    }
 
-  if (isDetail) {
-    return Hero(tag: 'request_$requestID', child: Card(child: content));
-  } else {
-    return Hero(
-        tag: 'request_$requestID',
-        child: Card(
+    List<Widget> actualContent = <Widget>[
+      SizedBox(
+        height: screenWidth * 0.04,
+      ),
+    ];
+
+    // Add the closing X button.
+    if (isDetail) {
+      actualContent.add(
+          Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
+        SizedBox(
+            height: screenWidth * 0.2,
+            width: screenWidth * 0.13,
             child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DetailPage(
-                        title: "Detail úkolu",
-                        request: request,
-                        cameFrom: cameFrom,
+              child: Icon(
+                Icons.clear,
+                size: screenWidth * 0.06,
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+            ))
+      ]));
+    }
+
+    for (Widget w in widgets) {
+      actualContent.add(Padding(
+        padding: EdgeInsets.only(
+            left: screenWidth * 0.04, right: screenWidth * 0.04),
+        child: w,
+      ));
+    }
+
+    actualContent.add(SizedBox(
+      height: screenWidth * 0.04,
+    ));
+
+    Widget content = Column(children: actualContent);
+
+    if (isDetail) {
+      return Hero(tag: 'request_$requestID', child: Card(child: content));
+    } else {
+      return Hero(
+          tag: 'request_$requestID',
+          child: Card(
+              child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailPage(
+                          title: "Detail úkolu",
+                          request: request,
+                          cameFrom: cameFrom,
+                        ),
                       ),
-                    ),
-                  ).then((_){
-                    onReturn();
-                  });
-                },
-                child: content)));
+                    ).then((_) {
+                      onReturn();
+                    });
+                  },
+                  child: content)));
+    }
   }
 }
 
@@ -339,7 +538,7 @@ List<Widget> textWithPadding(List<String> texts, double screenWidth) {
             left: screenWidth * 0.04,
             right: screenWidth * 0.04,
             bottom: screenWidth * 0.04),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, children: l))
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: l))
   ];
 }

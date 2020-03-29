@@ -366,9 +366,9 @@ class MyHomePageState extends State<MyHomePage> {
 
   Future<void> _onRefresh() async {
     await Future.delayed(Duration(milliseconds: 1000));
-    await Data.updateRequests();
-    //_refreshController.refreshCompleted();
-    setState(() {});
+    Data.updateAllAndThen(() {
+      setState(() {});
+    });
   }
 
   ListView cards() {
@@ -376,11 +376,10 @@ class MyHomePageState extends State<MyHomePage> {
         currentPage == 0 ? Data.myRequests : Data.otherRequests;
     List<Widget> l = List<Widget>();
     for (Request request in requests) {
-      l.add(cardBuilder(
+      l.add(CardBuilder.buildCard(
         context: context,
         request: request,
         cameFrom: HOME_PAGE,
-        screenWidth: screenWidth,
         isDetail: false,
         onReturn: () {
           Data.updateAllAndThen(() {
@@ -405,19 +404,16 @@ class MyHomePageState extends State<MyHomePage> {
     return ListView(children: <Widget>[
       ExpansionTile(
           title: Text("Můj profil"),
-          children: textWithPadding([
-            "${Data.me.firstName} ${Data.me.lastName}",
-            Data.me.phone,
-            Data.me.email
-          ], screenWidth)),
+          children: textWithPadding(Data.me.getNamesPhoneEmail(), screenWidth)),
       CheckboxListTile(
           title: Text('Dostávat notifikace do aplikace'),
           subtitle: Text("V opačném případě budete dostávat SMS"),
           secondary: Icon(Icons.notifications),
           value: Data.preferences.notificationsToApp,
           onChanged: (val) {
-            setState(() {
-              //Data2.toggleNotifications();
+            Data.toggleNotifications().then((_) {
+              setState(() {
+              });
             });
           }),
     ]);
@@ -443,10 +439,12 @@ class MyHomePageState extends State<MyHomePage> {
         children:
             textWithPadding(["TODO: Přidat privacy policy."], screenWidth),
       ),
+      SizedBox(height: screenWidth * 0.05),
       ListTile(
         title: Text(
             "Máte pro nás zpětnou vazbu? Pošlete nám ji, ať můžeme aplikaci vylepšit."),
       ),
+      SizedBox(height: screenWidth * 0.05),
       buttonListTile("Odeslat zpětnou vazbu", screenWidth, () {
         sendFeedback();
       }),
@@ -470,7 +468,9 @@ class MyHomePageState extends State<MyHomePage> {
       case HOME_PAGE:
       case TASKS_PAGE:
         body = LiquidPullToRefresh(
-          child: (Data.myRequests.length == 0 && currentPage == HOME_PAGE) ? noTasks() : cards(),
+          child: (Data.myRequests.length == 0 && currentPage == HOME_PAGE)
+              ? noTasks()
+              : cards(),
           onRefresh: _onRefresh,
           showChildOpacityTransition: false,
           color: PRIMARY_COLOR,
@@ -508,7 +508,8 @@ class MyHomePageState extends State<MyHomePage> {
         itemCount: Data2.requests != null ? Data2.requests.length : 0,
         cardBuilder: cardBuilder,
       ),*/ //ListView(children: <Widget>[] + centerContent + []),
-      bottomNavigationBar: bottomNavBar(context, currentPage, screenWidth, switchToPage),
+      bottomNavigationBar:
+          bottomNavBar(context, currentPage, screenWidth, switchToPage),
       floatingActionButton: currentPage == ABOUT_PAGE
           ? FloatingActionButton(
               tooltip: 'Debug settings',
@@ -529,12 +530,14 @@ class MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       body: ListView(
         children: <Widget>[
+          SizedBox(height: screenWidth * 0.05),
           imgBlock('pomuzemesi_phone'),
           ListTile(
             title: Text(
                 'Pro spuštění této aplikace musíte mít registraci na www.pomuzeme.si - pokud ji ještě nemáte, nejdříve se tam zaregistrujte.'),
           ),
-          buttonListTile("Mám registraci na pomuzeme.si", screenWidth, () {
+          SizedBox(height: screenWidth * 0.1),
+          buttonListTile("Registraci mám", screenWidth, () {
             setStateEnterPhone();
           }),
         ],
@@ -578,6 +581,7 @@ class MyHomePageState extends State<MyHomePage> {
                   return null;
                 },
               )),
+          SizedBox(height: screenWidth * 0.05),
           buttonListTile("Získat ověřovací SMS", screenWidth, () {
             if (_formEnterPhoneKey.currentState.validate()) {
               phoneNumber = controllerPhoneNumber.text;
@@ -637,6 +641,7 @@ class MyHomePageState extends State<MyHomePage> {
                   return null;
                 },
               )),
+          SizedBox(height: screenWidth * 0.05),
           buttonListTile("Ověřit", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
               setStateWaitForToken(controllerSMS.text /*, true*/);
@@ -647,7 +652,7 @@ class MyHomePageState extends State<MyHomePage> {
           ),
           buttonListTile("Odeslat novou SMS", screenWidth, () {
             setStateWaitForSMS();
-          }, light: true),
+          }, myButtonStyle: MyButtonStyle.light),
           /*buttonListTile("Ověřit (TEST nemám registraci)", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
               setStateWaitForToken(controllerSMS.text, false);
@@ -679,6 +684,7 @@ class MyHomePageState extends State<MyHomePage> {
     });
     debugPrint("build: auth token: $authToken");
     screenWidth = MediaQuery.of(context).size.width;
+    CardBuilder.setScreenWidth(screenWidth);
     Widget body;
     if (!loaded) {
       body = buildLoading('Načítám data ...');

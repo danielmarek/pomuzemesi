@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 // TODO: remove fields that are not explicitly used by this app?
-// TODO: more detailed work for missing keys etc.
 // TODO: model of organisation
-// TODO: parse datetime
+// TODO: parse all datetimes
+
+// TODO: need a few more fields from the backend
 
 // Ukol.
 /*
@@ -37,8 +39,10 @@ class Request {
   // - there is city+cityPart+address => missing street+streetNumber.
   // - subscriber - is this a name?
   final int id;
+
   // State of the request.
   final String state;
+
   // My own state as a volunteer in relation to the request.
   final String myState;
 
@@ -51,7 +55,7 @@ class Request {
   final int organisationID;
   final DateTime fulfillmentDate;
   final int requiredVolunteerCount, acceptedVolunteerCount;
-  final String createdAt, updatedAt;
+  final DateTime createdAt, updatedAt;
   final String closedState;
   final String closedNote;
   final String coordinatorEmail;
@@ -61,37 +65,81 @@ class Request {
   final String subscriberPhone;
   final bool allDetailsGranted;
 
-  Request({this.id, this.state, this.myState, this.shortDescription, this.city,
-      this.cityPart, this.address, this.organisationID, this.fulfillmentDate,
-      this.requiredVolunteerCount, this.acceptedVolunteerCount, this.createdAt,
-      this.updatedAt, this.closedState, this.closedNote, this.coordinatorEmail,
-      this.coordinatorFirstName, this.coordinatorLastName, this.subscriber,
-      this.subscriberPhone, this.allDetailsGranted});
+  Request(
+      {this.id,
+      this.state,
+      this.myState,
+      this.shortDescription,
+      this.city,
+      this.cityPart,
+      this.address,
+      this.organisationID,
+      this.fulfillmentDate,
+      this.requiredVolunteerCount,
+      this.acceptedVolunteerCount,
+      this.createdAt,
+      this.updatedAt,
+      this.closedState,
+      this.closedNote,
+      this.coordinatorEmail,
+      this.coordinatorFirstName,
+      this.coordinatorLastName,
+      this.subscriber,
+      this.subscriberPhone,
+      this.allDetailsGranted});
 
   static Request fromParsedJson(var r) {
     return Request(
-      id: r['id'],
-      state: r['state'],
-      myState: r['requested_volunteer_state'],
-      shortDescription: r['short_description'],
-      city: r['city'],
-      cityPart: r['city_part'],
-      address: r['address'],
-      organisationID: r['organisation_id'],
+      id: r.containsKey('id') ? r['id'] : null,
+      state: r.containsKey('state') ? r['state'] : null,
+      myState: r.containsKey('requested_volunteer_state')
+          ? r['requested_volunteer_state']
+          : null,
+      shortDescription:
+          r.containsKey('short_description') ? r['short_description'] : null,
+      city: r.containsKey('city') ? r['city'] : null,
+      cityPart: r.containsKey('city_part') ? r['city_part'] : null,
+      address: r.containsKey('address') ? r['address'] : null,
+      organisationID:
+          r.containsKey('organisation_id') ? r['organisation_id'] : null,
       // NOTE: typo on the backend.
-      fulfillmentDate: r['fullfillment_date'] != null ? DateTime.parse(r['fullfillment_date']) : null,
-      requiredVolunteerCount: r['required_volunteer_count'],
-      acceptedVolunteerCount: r['accepted_volunteer_count'],
-      createdAt: r['created_at'],
-      updatedAt: r['updated_at'],
-      closedState: r['closed_state'],
-      closedNote: r['closed_note'],
-      coordinatorEmail: r['coordinator']['email'],
-      coordinatorFirstName: r['coordinator']['first_name'],
-      coordinatorLastName: r['coordinator']['last_name'],
-      subscriber: r['subscriber'],
-      subscriberPhone: r['subscriber_phone'],
-      allDetailsGranted: r['all_details_granted'],
+      fulfillmentDate: r.containsKey('fullfillment_date')
+          ? (r['fullfillment_date'] != null
+              ? DateTime.parse(r['fullfillment_date'])
+              : null)
+          : null,
+      requiredVolunteerCount: r.containsKey('required_volunteer_count')
+          ? r['required_volunteer_count']
+          : null,
+      acceptedVolunteerCount: r.containsKey('accepted_volunteer_count')
+          ? r['accepted_volunteer_count']
+          : null,
+      createdAt: r.containsKey('created_at') ? (r['created_at'] != null
+          ? DateTime.parse(r['created_at'])
+          : null) : null,
+      updatedAt: r.containsKey('updated_at') ? (r['updated_at'] != null
+          ? DateTime.parse(r['updated_at']) : null) : null,
+      closedState: r.containsKey('closed_state') ? r['closed_state'] : null,
+      closedNote: r.containsKey('closed_note') ? r['closed_note'] : null,
+      subscriber: r.containsKey('subscriber') ? r['subscriber'] : null,
+      subscriberPhone:
+          r.containsKey('subscriber_phone') ? r['subscriber_phone'] : null,
+      allDetailsGranted: r.containsKey('all_details_granted')
+          ? r['all_details_granted']
+          : null,
+      // NOTE: dict in dict.
+      coordinatorEmail: (r.containsKey('coordinator') &&
+              r['coordinator'].containsKey('email'))
+          ? r['coordinator']['email']
+          : null,
+      coordinatorFirstName: (r.containsKey('coordinator') &&
+              r['coordinator'].containsKey('first_name'))
+          ? r['coordinator']['first_name']
+          : null,
+      coordinatorLastName: (r.containsKey('coordinator') &&
+              r['coordinator'].containsKey('last_name'))
+          ? r['coordinator']['last_name']
+          : null,
     );
   }
 
@@ -103,6 +151,64 @@ class Request {
       l.add(Request.fromParsedJson(r));
     }
     return l;
+  }
+
+  String formatCityAndPart({bool upper = true}) {
+    String c = this.city;
+    String p = this.cityPart;
+    if (c == null && p == null) {
+      return upper ? 'Neurčené místo'.toUpperCase() : 'Neurčené místo';
+    }
+    String cityAndPart = "$c, $p";
+    if (c == null) {
+      cityAndPart = p;
+    } else if (p == null || c == p) {
+      cityAndPart = c;
+    }
+    if (cityAndPart.length > 22) {
+      cityAndPart = cityAndPart.substring(0, 18) + ' ...';
+    }
+    return upper ? cityAndPart.toUpperCase() : cityAndPart;
+  }
+
+  String formatFulfillmentDate({bool upper = true}) {
+    if (this.fulfillmentDate != null) {
+      var dateFormatter = new DateFormat('dd. MM. kk:mm');
+      return dateFormatter.format(this.fulfillmentDate.toLocal());
+    } else {
+      return upper ? 'Neurčený čas'.toUpperCase() : 'Neurčený čas';
+    }
+  }
+
+  String formatCreatedAt() {
+    if (this.createdAt != null) {
+      var dateFormatter = new DateFormat('dd. MM. kk:mm');
+      return dateFormatter.format(this.createdAt.toLocal());
+    } else {
+      return 'neznámo';
+    }
+  }
+
+  String formatTitle() {
+    String r = 'Popis není vyplněn';
+    if (this.shortDescription != null) {
+      if (this.shortDescription.length > 25) {
+        r = this.shortDescription.substring(0, 25) + ' ...';
+      } else {
+        r = this.shortDescription;
+      }
+    }
+    return r;
+  }
+
+  // TODO also phone number, when the backend supports this.
+  String formatCoordinatorFullName() {
+    String first = coordinatorFirstName == null ? '' : coordinatorFirstName;
+    String last = coordinatorLastName == null ? '' : coordinatorLastName;
+    if (first == '' && last == '') {
+      return null;
+    }
+    return <String>[first, last].join(' ');
   }
 }
 
@@ -140,28 +246,42 @@ class Address {
   final int addressableID;
   final String createdAt, updatedAt;
 
-  Address({this.id, this.street, this.streetNumber, this.city,
-      this.cityPart, this.postalCode, this.countryCode, this.geoEntryID,
-      this.geoUnitID, this.geoProvider, this.coordinate, this.addressableType,
-      this.addressableID, this.createdAt, this.updatedAt});
+  Address(
+      {this.id,
+      this.street,
+      this.streetNumber,
+      this.city,
+      this.cityPart,
+      this.postalCode,
+      this.countryCode,
+      this.geoEntryID,
+      this.geoUnitID,
+      this.geoProvider,
+      this.coordinate,
+      this.addressableType,
+      this.addressableID,
+      this.createdAt,
+      this.updatedAt});
 
-  static Address fromParsedJson(var a){
+  static Address fromParsedJson(var a) {
     return Address(
-        id: a['id'],
-        street: a['street'],
-        streetNumber: a['street_number'],
-        city: a['city'],
-        cityPart: a['city_part'],
-        postalCode: a['postal_code'],
-        countryCode: a['country_code'],
-        geoEntryID: a['geo_entry_id'],
-        geoUnitID: a['geo_unit_id'],
-        geoProvider: a['geo_provider'],
-        coordinate: a['coordinate'],
-        addressableType: a['addressable_type'],
-        addressableID: a['addressable_id'],
-        createdAt: a['created_at'],
-        updatedAt: a['updated_at'],
+      id: a.containsKey('id') ? a['id'] : null,
+      street: a.containsKey('street') ? a['street'] : null,
+      streetNumber: a.containsKey('street_number') ? a['street_number'] : null,
+      city: a.containsKey('city') ? a['city'] : null,
+      cityPart: a.containsKey('city_part') ? a['city_part'] : null,
+      postalCode: a.containsKey('postal_code') ? a['postal_code'] : null,
+      countryCode: a.containsKey('country_code') ? a['country_code'] : null,
+      geoEntryID: a.containsKey('geo_entry_id') ? a['geo_entry_id'] : null,
+      geoUnitID: a.containsKey('geo_unit_id') ? a['geo_unit_id'] : null,
+      geoProvider: a.containsKey('geo_provider') ? a['geo_provider'] : null,
+      coordinate: a.containsKey('coordinate') ? a['coordinate'] : null,
+      addressableType:
+          a.containsKey('addressable_type') ? a['addressable_type'] : null,
+      addressableID:
+          a.containsKey('addressable_id') ? a['addressable_id'] : null,
+      createdAt: a.containsKey('created_at') ? a['created_at'] : null,
+      updatedAt: a.containsKey('updated_at') ? a['updated_at'] : null,
     );
   }
 }
@@ -171,19 +291,36 @@ class Volunteer {
   final String firstName, lastName, email, phone;
   final Address address;
 
-  Volunteer({this.id, this.firstName, this.lastName, this.email,
-      this.phone, this.address});
+  Volunteer(
+      {this.id,
+      this.firstName,
+      this.lastName,
+      this.email,
+      this.phone,
+      this.address});
 
   static Volunteer fromRawJson(String jsonData) {
     var v = json.decode(jsonData);
     return Volunteer(
-      id: v['id'],
-      firstName: v['first_name'],
-      lastName: v['last_name'],
-      email: v['email'],
-      phone: v['phone'],
-      address: Address.fromParsedJson(v['address']),
+      id: v.containsKey('id') ? v['id'] : null,
+      firstName: v.containsKey('first_name') ? v['first_name'] : null,
+      lastName: v.containsKey('last_name') ? v['last_name'] : null,
+      email: v.containsKey('email') ? v['email'] : null,
+      phone: v.containsKey('phone') ? v['phone'] : null,
+      address: v.containsKey('address')
+          ? Address.fromParsedJson(v['address'])
+          : null,
     );
+  }
+
+  List<String> getNamesPhoneEmail() {
+    List<String> r = List<String>();
+    String first = firstName == null ? '' : firstName;
+    String last = lastName == null ? '' : lastName;
+    r.add(<String>[first, last].join(' '));
+    r.add(phone != null ? phone : '');
+    r.add(email != null ? email : '');
+    return r;
   }
 }
 
@@ -195,7 +332,9 @@ class VolunteerPreferences {
   static VolunteerPreferences fromRawJson(String jsonData) {
     var v = json.decode(jsonData);
     return VolunteerPreferences(
-      notificationsToApp: v['notifications_to_app'],
+      notificationsToApp: v.containsKey('notifications_to_app')
+          ? v['notifications_to_app']
+          : null,
     );
   }
 }

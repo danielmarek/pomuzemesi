@@ -39,13 +39,13 @@ class _DetailPageState extends State<DetailPage> {
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
+    CardBuilder.setScreenWidth(screenWidth);
     return Scaffold(
       //appBar: AppBar(title: Text(Data2.requests[widget.requestID].shortDescription),),
-      body: cardBuilder(
+      body: CardBuilder.buildCard(
           context: context,
           request: widget.request,
           cameFrom: widget.cameFrom,
-          screenWidth: screenWidth,
           isDetail: true,
           onAccept: acceptTask,
           onDecline: declineTask,

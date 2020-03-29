@@ -98,7 +98,7 @@ class RestClient {
     }
   }
 
-  Future<bool> setNotificationsToApp(bool sendNotificationsToApp) async {
+  static Future<bool> setNotificationsToApp(bool sendNotificationsToApp) async {
     String value = sendNotificationsToApp ? 'true' : 'false';
     String url = BASE_URL + '/api/v1/volunteer/preferences?notifications_to_app=$value';
     debugPrint("calling $url ...");

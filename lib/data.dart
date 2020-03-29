@@ -17,6 +17,14 @@ class Data {
     _onPreferencesUpdate = onPreferencesUpdate;
   }
 
+  static Future<bool> toggleNotifications() async {
+    bool current = preferences.notificationsToApp;
+    bool newSetting = !current;
+    await RestClient.setNotificationsToApp(newSetting);
+    await updatePreferences();
+    return newSetting;
+  }
+
   static void updateAllAndThen(Function fn) async {
     Future.wait([updateRequests(), updatePreferences(), updateMe()]).then((_){
       if (fn != null) {
