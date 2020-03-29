@@ -8,7 +8,49 @@ import 'data.dart';
 import 'misc.dart';
 import 'model.dart';
 
-BottomNavigationBar bottomNavBar(BuildContext context, int pageId, Function(int) switchToTab) {
+
+BottomNavigationBarItem bottomNAvBarItemWithBadge({
+  @required int number,
+  @required IconData icon,
+  @required String text,
+  @required screenWidth,
+}) {
+  return BottomNavigationBarItem(
+    icon: new Stack(
+      children: <Widget>[
+        new Icon(icon),
+        new Positioned(
+          right: 0,
+          top: 0,
+          child: new Container(
+            padding: EdgeInsets.all(screenWidth / 400.0),
+            decoration: new BoxDecoration(
+              color: Color(0xffb56320),
+              borderRadius: BorderRadius.circular(screenWidth / 40.0),
+            ),
+            constraints: BoxConstraints(
+              minWidth: screenWidth / 30.0,
+              minHeight: screenWidth / 40.0,
+            ),
+            child: new Text(
+              '$number',
+              style: new TextStyle(
+                color: Colors.white,
+                fontSize: screenWidth / 40.0,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        )
+      ],
+    ),
+    title: Text(text),
+  );
+}
+
+BottomNavigationBar bottomNavBar(BuildContext context, int pageId, double screenWidth, Function(int) switchToTab) {
+  int otherRequestCount = Data.otherRequests.length;
+  //otherRequestCount = 0;
   return BottomNavigationBar(
     type: BottomNavigationBarType.fixed,
     items: <BottomNavigationBarItem>[
@@ -16,9 +58,17 @@ BottomNavigationBar bottomNavBar(BuildContext context, int pageId, Function(int)
         icon: Icon(Icons.assignment_ind),
         title: Text('Úkoly'),
       ),
+      otherRequestCount > 0 ? bottomNAvBarItemWithBadge(
+          number: otherRequestCount,
+          //number: 10,
+          icon: Icons.notifications,
+          text: 'Poptávky',
+        screenWidth: screenWidth,
+      ) :
       BottomNavigationBarItem(
         icon: Icon(Icons.notifications),
         title: Text('Poptávky'),
+
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.account_circle),

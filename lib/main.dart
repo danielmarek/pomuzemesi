@@ -499,7 +499,7 @@ class MyHomePageState extends State<MyHomePage> {
         itemCount: Data2.requests != null ? Data2.requests.length : 0,
         cardBuilder: cardBuilder,
       ),*/ //ListView(children: <Widget>[] + centerContent + []),
-      bottomNavigationBar: bottomNavBar(context, currentPage, switchToPage),
+      bottomNavigationBar: bottomNavBar(context, currentPage, screenWidth, switchToPage),
       floatingActionButton: currentPage == ABOUT_PAGE
           ? FloatingActionButton(
               tooltip: 'Debug settings',
