@@ -32,7 +32,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
           ),
         ],
       ),
-      bottomNavigationBar: bottomNavBar(context, PRIVACY_POLICY_PAGE),
+      //bottomNavigationBar: bottomNavBar(context, PRIVACY_POLICY_PAGE),
     );
   }
 }

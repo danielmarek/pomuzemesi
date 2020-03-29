@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 
-Color PRIMARY_COLOR = Color(0xff64cde3);
+//Color PRIMARY_COLOR = Color(0xff64cde3);
+Color PRIMARY_COLOR = Color(0xff6ecee1);
+Color PRIMARY_COLOR2 = Color(0xff52bbd2);
 Color SECONDARY_COLOR = Color(0xffd48d22);
 
 // Page keys in BottomNavigationBar.
-final int HOME_PAGE = 0;
-int TASKS_PAGE = 1;
-int SETTINGS_PAGE = 2;
-int PRIVACY_POLICY_PAGE = 3;
+const int HOME_PAGE = 0;
+const int TASKS_PAGE = 1;
+const int SETTINGS_PAGE = 2;
+const int PRIVACY_POLICY_PAGE = 3;
 
 // Sizes relative to screen width.
 double FONT_SIZE_NORMAL = 0.04;

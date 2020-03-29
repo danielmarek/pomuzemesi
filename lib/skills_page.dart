@@ -48,7 +48,7 @@ class _SkillsPageState extends State<SkillsPage> {
       body: ListView(
         children: allTiles(),
       ),
-      bottomNavigationBar: bottomNavBar(context, SETTINGS_PAGE),
+      //bottomNavigationBar: bottomNavBar(context, SETTINGS_PAGE),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Help',
         backgroundColor: PRIMARY_COLOR,
