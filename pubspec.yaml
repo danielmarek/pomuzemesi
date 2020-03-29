@@ -36,6 +36,7 @@ dependencies:
   #pull_to_refresh: 1.5.8
   liquid_pull_to_refresh: 1.1.1
   intl: 0.16.1
+  flutter_email_sender: 3.0.1
 
 dev_dependencies:
   flutter_test:

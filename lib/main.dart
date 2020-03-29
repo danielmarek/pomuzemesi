@@ -4,6 +4,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:loading_animations/loading_animations.dart';
 
 //import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -75,6 +76,7 @@ class PomuzemeSiApp extends StatelessWidget {
 }
 
 enum HomePageState {
+  haveRegistration,
   enterPhone,
   waitForSMS,
   enterSMS,
@@ -138,6 +140,13 @@ class MyHomePageState extends State<MyHomePage> {
     setStateEnterPhone();
     return true;
   }*/
+
+  Future<bool> setStateHaveRegistration() async {
+    setState(() {
+      homePageState = HomePageState.haveRegistration;
+    });
+    return true;
+  }
 
   Future<bool> setStateEnterPhone() async {
     setState(() {
@@ -260,7 +269,7 @@ class MyHomePageState extends State<MyHomePage> {
     loaded = true;
     debugPrint("blockingFetchAll: auth token: $authToken");
     if (authToken == null) {
-      setStateEnterPhone();
+      setStateHaveRegistration();
       return true;
     }
     try {
@@ -368,11 +377,17 @@ class MyHomePageState extends State<MyHomePage> {
     List<Widget> l = List<Widget>();
     for (Request request in requests) {
       l.add(cardBuilder(
-          context: context,
-          request: request,
-          cameFrom: HOME_PAGE,
-          screenWidth: screenWidth,
-          isDetail: false));
+        context: context,
+        request: request,
+        cameFrom: HOME_PAGE,
+        screenWidth: screenWidth,
+        isDetail: false,
+        onReturn: () {
+          Data.updateAllAndThen(() {
+            setState(() {});
+          });
+        },
+      ));
     }
     return ListView(
       children: l,
@@ -408,14 +423,33 @@ class MyHomePageState extends State<MyHomePage> {
     ]);
   }
 
+  void sendFeedback() async {
+    final Email email = Email(
+      subject: 'Zpětná vazba na Pomůžeme.si',
+      body: 'Toto si myslím o Pomůžeme.si a/nebo této mobilní aplikaci: ',
+      recipients: [FEEDBACK_MAILBOX],
+    );
+    await FlutterEmailSender.send(email);
+  }
+
   Widget aboutBody() {
     return ListView(children: <Widget>[
-      ExpansionTile(title: Text("O aplikaci"), children:
-      textWithPadding(["Vytvořeno v březnu 2020."], screenWidth),
+      ExpansionTile(
+        title: Text("O aplikaci"),
+        children: textWithPadding(["Vytvořeno v březnu 2020."], screenWidth),
       ),
-      ExpansionTile(title: Text("Privacy Policy"), children:
-      textWithPadding(["TODO: Přidat privacy policy."], screenWidth),
+      ExpansionTile(
+        title: Text("Privacy Policy"),
+        children:
+            textWithPadding(["TODO: Přidat privacy policy."], screenWidth),
       ),
+      ListTile(
+        title: Text(
+            "Máte pro nás zpětnou vazbu? Pošlete nám ji, ať můžeme aplikaci vylepšit."),
+      ),
+      buttonListTile("Odeslat zpětnou vazbu", screenWidth, () {
+        sendFeedback();
+      }),
     ]);
   }
 
@@ -479,6 +513,23 @@ class MyHomePageState extends State<MyHomePage> {
               },
             )
           : null,
+    );
+  }
+
+  Widget buildHaveRegistration() {
+    return Scaffold(
+      body: ListView(
+        children: <Widget>[
+          imgBlock(),
+          ListTile(
+            title: Text(
+                'Pro spuštění této aplikace musíte mít registraci na www.pomuzeme.si - pokud ji ještě nemáte, nejdříve se tam zaregistrujte.'),
+          ),
+          buttonListTile("Mám registraci na pomuzeme.si", screenWidth, () {
+            setStateEnterPhone();
+          }),
+        ],
+      ),
     );
   }
 
@@ -626,6 +677,9 @@ class MyHomePageState extends State<MyHomePage> {
       // Login/registration flow.
       //if (authToken == null || !registrationDone) {
       switch (homePageState) {
+        case HomePageState.haveRegistration:
+          body = buildHaveRegistration();
+          break;
         case HomePageState.enterPhone:
           body = buildEnterPhoneNumber();
           break;
@@ -679,6 +733,7 @@ class MyHomePageState extends State<MyHomePage> {
                       controllerPhoneNumber.text = '';
                       controllerSMS.text = '';
                       SharedPrefs.removeToken().then((_) {
+                        setStateHaveRegistration();
                         Navigator.of(context).pop();
                       });
                     },

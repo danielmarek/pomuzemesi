@@ -16,15 +16,15 @@ class Data {
     _onMeUpdate = onMeUpdate;
     _onPreferencesUpdate = onPreferencesUpdate;
   }
-/*
-  void updateAllAndThen(Function fn) async {
+
+  static void updateAllAndThen(Function fn) async {
     Future.wait([updateRequests(), updatePreferences(), updateMe()]).then((_){
       if (fn != null) {
         fn();
       }
     });
   }
-*/
+
   static Future<bool> updateRequests() async {
     List<Request> all = await RestClient.getVolunteerRequests();
     List<Request> my = List<Request>();

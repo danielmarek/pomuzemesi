@@ -27,11 +27,13 @@ class _DetailPageState extends State<DetailPage> {
 
   void acceptTask() async {
     // TODO HTTP 409: REQUEST_CAPACITY_EXCEEDED
-    RestClient.respondToRequest(widget.request.id, true);
+    await RestClient.respondToRequest(widget.request.id, true);
+    Navigator.of(context).pop();
   }
 
   void declineTask() async {
-    RestClient.respondToRequest(widget.request.id, false);
+    await RestClient.respondToRequest(widget.request.id, false);
+    Navigator.of(context).pop();
   }
 
   @override

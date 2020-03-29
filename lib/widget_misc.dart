@@ -142,6 +142,7 @@ Widget cardBuilder({
   @required int cameFrom,
   @required double screenWidth,
   @required bool isDetail,
+  @required Function onReturn,
   Function onAccept,
   Function onDecline,
 }) {
@@ -268,7 +269,9 @@ Widget cardBuilder({
                         cameFrom: cameFrom,
                       ),
                     ),
-                  );
+                  ).then((_){
+                    onReturn();
+                  });
                 },
                 child: content)));
   }
