@@ -5,15 +5,18 @@ import 'package:maps_launcher/maps_launcher.dart';
 import 'data.dart';
 import 'model.dart';
 import 'misc.dart';
+import 'rest_client.dart';
 import 'widget_misc.dart';
 
+
 class DetailPage extends StatefulWidget {
-  DetailPage({Key key, this.title, this.task, @required this.cameFrom})
+  DetailPage({Key key, this.title, this.request, @required this.cameFrom})
       : super(key: key);
 
   final String title;
-  final Task task;
+  //final Task task;
   final int cameFrom;
+  final Request request;
 
   @override
   _DetailPageState createState() => _DetailPageState();
@@ -22,127 +25,36 @@ class DetailPage extends StatefulWidget {
 class _DetailPageState extends State<DetailPage> {
   double screenWidth;
 
-  Widget isMineSection() {
-    if (!widget.task.isMine) {
-      if (widget.task.volunteersBooked < widget.task.volunteersRequired) {
-        return buttonListTile('Pomoci s tímto úkolem', screenWidth, () {
-          setState(() {
-            Data.assignTask(widget.task.id, true);
-          });
-        });
-      } else {
-        return ListTile(
-            leading: Icon(Icons.info, color: Colors.blue),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                Text(
-                  'Tento úkol je již plně obsazen.',
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: screenWidth * FONT_SIZE_NORMAL,
-                  ),
-                ),
-              ],
-            ));
-      }
-    } else {
-      return ListTile(
-          title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          Icon(Icons.info, color: PRIMARY_COLOR),
-          Text('Toto je můj úkol.',
-              style: TextStyle(
-                  color: PRIMARY_COLOR,
-                  fontWeight: FontWeight.bold,
-                  fontSize: screenWidth * FONT_SIZE_NORMAL)),
-          MaterialButton(
-            color: SECONDARY_COLOR,
-            child: Text(
-              'Odebrat tento úkol',
-              style: TextStyle(
-                  fontSize: screenWidth * FONT_SIZE_NORMAL,
-                  color: Colors.white),
-            ),
-            onPressed: () {
-              setState(() {
-                Data.assignTask(widget.task.id, false);
-              });
-            },
-          )
-        ],
-      ));
-    }
+  void acceptTask() async {
+    // TODO HTTP 409: REQUEST_CAPACITY_EXCEEDED
+    await RestClient.respondToRequest(widget.request.id, true);
+    Navigator.of(context).pop();
+  }
+
+  void declineTask() async {
+    await RestClient.respondToRequest(widget.request.id, false);
+    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
+    CardBuilder.setScreenWidth(screenWidth);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.task.description),
+      //appBar: AppBar(title: Text(Data2.requests[widget.requestID].shortDescription),),
+      body: CardBuilder.buildCard(
+          context: context,
+          request: widget.request,
+          cameFrom: widget.cameFrom,
+          isDetail: true,
+          onAccept: acceptTask,
+          onDecline: declineTask,
       ),
-      body: ListView(
-        children: <Widget>[
-          ListTile(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                    "Pomoc potřebuje: ${widget.task.firstName} ${widget.task.lastName}"),
-                Text("tel: ${widget.task.phone}"),
-              ],
-            ),
-            subtitle: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Text("${widget.task.address}"),
-                  Text("${widget.task.whenToDo}"),
-                ]),
-          ),
-          Container(
-            padding: EdgeInsets.only(
-                left: screenWidth * LEFT_OF_TEXT_BLOCK,
-                right: screenWidth * LEFT_OF_TEXT_BLOCK),
-            height: 100, // FIXME
-            //width: 200,
-            child: Text(
-              "Je potřeba pomoci s lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-              style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL),
-              softWrap: true,
-            ),
-          ),
-          ListTile(
-            title: Text(
-                "Přiřazených dobrovolníků: ${widget.task.volunteersBooked} z ${widget.task.volunteersRequired}"),
-            subtitle:
-                Text("Potřebná dovednost: ${widget.task.skillRequired.name}"),
-          ),
-          isMineSection(),
-          ListTile(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text("Koordinátor: ${widget.task.coordinator}"),
-                Text("tel: ${widget.task.organization.contactPhone}"),
-              ],
-            ),
-            subtitle: Text("${widget.task.organization.name}"),
-          ),
-          buttonListTile("Otevřít mapu", screenWidth, () {
-            setState(() {
-              MapsLauncher.launchQuery(widget.task.address);
-            });
-          }),
-        ],
-      ),
-      bottomNavigationBar: bottomNavBar(context, widget.cameFrom),
+      /*bottomNavigationBar: bottomNavBar(context, widget.cameFrom),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Help',
         child: Icon(Icons.help),
-      ),
+      ),*/
     );
   }
 }

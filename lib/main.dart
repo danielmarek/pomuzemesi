@@ -4,16 +4,29 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:loading_animations/loading_animations.dart';
+
+//import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+
+// FIXME DEBUG
+//import 'api_page.dart';
+//import 'a_webview_page.dart';
+//import 'captcha_page.dart';
 
 import 'dart:io';
 import 'dart:async';
+//import 'dart:ui' as ui;
 
 import 'data.dart';
-import 'task_detail_page.dart';
 import 'model.dart';
+
+//import 'task_detail_page.dart';
 import 'misc.dart';
-import 'personal_details_form.dart';
+
+//import 'personal_details_form.dart';
+import 'rest_client.dart';
 import 'shared_prefs.dart';
 import 'widget_misc.dart';
 
@@ -23,15 +36,26 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Crashlytics.instance.enableInDevMode = true;
   FlutterError.onError = Crashlytics.instance.recordFlutterError;
-  Data.initWithRandomData();
   SharedPrefs.init();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) {
-    runApp(MyApp());
+    runApp(PomuzemeSiApp());
   });
 }
 
-class MyApp extends StatelessWidget {
+Widget _wrapWithBanner(Widget child) {
+  return Banner(
+    child: child,
+    location: BannerLocation.topStart,
+    message: 'BETA',
+    color: Colors.green.withOpacity(0.6),
+    textStyle: TextStyle(
+        fontWeight: FontWeight.w700, fontSize: 12.0, letterSpacing: 1.0),
+    textDirection: TextDirection.ltr,
+  );
+}
+
+class PomuzemeSiApp extends StatelessWidget {
   static FirebaseAnalytics analytics = FirebaseAnalytics();
   static FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
@@ -52,12 +76,15 @@ class MyApp extends StatelessWidget {
 }
 
 enum HomePageState {
+  haveRegistration,
   enterPhone,
   waitForSMS,
   enterSMS,
   waitForToken,
-  enterRegistrationDetails,
-  uploadProfile,
+  //enterRegistrationDetails,
+  //uploadProfile,
+  blockingFetchAll,
+  ready,
 }
 
 class MyHomePage extends StatefulWidget {
@@ -76,21 +103,23 @@ class MyHomePageState extends State<MyHomePage> {
   TextEditingController controllerPhoneNumber = new TextEditingController();
   TextEditingController controllerSMS = new TextEditingController();
 
-  String token;
+  String fcmToken, authToken, phoneNumber;
   bool loaded = false;
-  bool registrationDone = false;
+
+  //bool registrationDone = false;
+  int currentPage = HOME_PAGE;
 
   HomePageState homePageState = HomePageState.enterPhone;
 
-  final _formKey = GlobalKey<FormState>();
-  FormControllers controllers = FormControllers();
+  //final _formKey = GlobalKey<FormState>();
 
-  Future<bool> getPrefsThenBuild() async {
-    token = await SharedPrefs.getToken();
-    setState(() {
-      loaded = true;
-    });
-    return true;
+  //FormControllers controllers = FormControllers();
+
+  @override
+  void initState() {
+    super.initState();
+    firebaseCloudMessagingSetUpListeners(firebaseMessaging);
+    setStateBlockingFetchAll();
   }
 
   @override
@@ -100,63 +129,171 @@ class MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    firebaseCloudMessagingSetUpListeners(firebaseMessaging);
-    getPrefsThenBuild();
+  /*Future<bool> getPrefsThenBuild() async {
+    authToken = await SharedPrefs.getToken();
+    loaded = true;
+    if (authToken != null) {
+      setStateBlockingFetchAll();
+      loaded = true;
+      return true;
+    }
+    setStateEnterPhone();
+    return true;
+  }*/
+
+  Future<bool> setStateHaveRegistration() async {
+    setState(() {
+      homePageState = HomePageState.haveRegistration;
+    });
+    return true;
   }
 
-  void setStateEnterSMS() {
+  Future<bool> setStateEnterPhone() async {
+    setState(() {
+      homePageState = HomePageState.enterPhone;
+    });
+    return true;
+  }
+
+  Future<bool> setStateEnterSMS() async {
+    controllerSMS.text = '';
     setState(() {
       homePageState = HomePageState.enterSMS;
     });
+    return true;
   }
 
-  void setStateWaitForSMS() {
+  void setStateWaitForSMS() async {
     setState(() {
       homePageState = HomePageState.waitForSMS;
-      Timer(const Duration(seconds: 2), () {
-        setStateEnterSMS();
-      });
     });
+    askForSMS();
   }
 
-  void setStateEnterRegistrationDetails() {
+  void askForSMS() async {
+    //phoneNumber = phone;
+    try {
+      // TODO: captcha token.
+      await RestClient.sessionNew(phoneNumber, 'foobar', fcmToken);
+      setStateEnterSMS();
+    } on APICallException catch (e) {
+      if (e.errorCode == 404) {
+        setStateEnterPhone().then((_) {
+          showDialogWithText(
+              context,
+              'Nenalezena registrace pro toto telefonní číslo. Registrujte se na www.pomuzeme.si a pak zde zadejte telefonní číslo znovu.',
+              null);
+        });
+      } else {
+        setStateEnterPhone().then((_) {
+          showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
+        });
+      }
+    }
+  }
+
+  /*void setStateEnterRegistrationDetails() {
     setState(() {
       homePageState = HomePageState.enterRegistrationDetails;
     });
-  }
+  }*/
 
   void setStateReady() {
-    registrationDone = true;
-    getPrefsThenBuild().then((_) {
+    //registrationDone = true;
+    homePageState = HomePageState.ready;
+    setState(() {});
+    // TODO first info about firebase message preferences.
+    /*getPrefsThenBuild().then((_) {
       showDialogWithText(
           context,
           "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.",
           () {});
-    });
+    });*/
   }
 
-  void setStateUploadProfile() {
+  /*void setStateUploadProfile() {
     setState(() {
       homePageState = HomePageState.uploadProfile;
       Timer(const Duration(seconds: 2), () {
         setStateReady();
       });
     });
-  }
+  }*/
 
-  void setStateWaitForToken(String smsCode, bool hasRegistration) {
+  void setStateWaitForToken(String smsCode /*, bool hasRegistration*/) async {
     setState(() {
       homePageState = HomePageState.waitForToken;
-      Timer(const Duration(seconds: 2), () {
-        tryToValidateSMS(smsCode, hasRegistration);
-      });
     });
+    submitSMSCode(smsCode);
   }
 
-  void tryToValidateSMS(String smsCode, bool hasRegistration) {
+  void submitSMSCode(String smsCode) async {
+    try {
+      authToken = await RestClient.sessionCreate(phoneNumber, smsCode);
+      RestClient.token = authToken;
+      await SharedPrefs.setToken(authToken);
+      setStateBlockingFetchAll();
+    } on APICallException catch (e) {
+      if (e.errorCode == 401) {
+        setStateEnterSMS().then((_) {
+          showDialogWithText(
+              context, 'Špatně zadaný kód, zkuste to znovu.', null);
+        });
+        // TODO double-check this is what the backend indeed returns.
+      } else if (e.errorCode == 429) {
+        setStateEnterPhone().then((_) {
+          showDialogWithText(
+              context,
+              'Vyčerpali jste počet pokusů na zadání kódu. Zadejte telefonní číslo znovu.',
+              null);
+        });
+      } else {
+        setStateEnterSMS().then((_) {
+          showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
+        });
+      }
+    }
+  }
+
+  Future<bool> setStateBlockingFetchAll() async {
+    setState(() {
+      homePageState = HomePageState.blockingFetchAll;
+    });
+    blockingFetchAll();
+    return true;
+  }
+
+  Future<bool> blockingFetchAll() async {
+    authToken = await SharedPrefs.getToken();
+    RestClient.token = authToken;
+    loaded = true;
+    debugPrint("blockingFetchAll: auth token: $authToken");
+    if (authToken == null) {
+      setStateHaveRegistration();
+      return true;
+    }
+    try {
+      await Data.updateRequests();
+      await Data.updateMe();
+      await Data.updatePreferences();
+      setStateReady();
+    } on APICallException catch (e) {
+      // Unauthorized resource.
+      if (e.errorCode == 401) {
+        debugPrint("blockingFetchAll: 401");
+        homePageState = HomePageState.enterPhone;
+        controllerSMS.text = '';
+        await SharedPrefs.removeToken();
+        setState(() {});
+        return true;
+      } else {
+        // TODO other errors.
+      }
+    }
+    return true;
+  }
+
+  /*void tryToValidateSMS(String smsCode, bool hasRegistration) {
     if (smsCode == '123456') {
       SharedPrefs.setToken('123456');
       if (hasRegistration) {
@@ -171,9 +308,9 @@ class MyHomePageState extends State<MyHomePage> {
       });
       showDialogWithText(context, "Kód byl zadán chybně.", () {});
     }
-  }
+  }*/
 
-  Widget imgBlock() {
+  Widget imgBlock(String filename) {
     return ListTile(
       title: Padding(
         padding: EdgeInsets.only(
@@ -182,42 +319,12 @@ class MyHomePageState extends State<MyHomePage> {
           top: screenWidth * 0.2,
           bottom: screenWidth * 0.1,
         ),
-        child: Image.asset('assets/img/undraw_confirmed.png'),
+        child: Image.asset('assets/img/$filename.png'),
       ),
     );
   }
 
-  ListTile taskToTile(Task task, BuildContext context) {
-    return ListTile(
-      title: Text(task.description),
-      subtitle: Text(
-          "${task.volunteersBooked}/${task.volunteersRequired} dobrovolníků. ${task.address}"),
-      leading: Icon(task.skillRequired.icon),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailPage(
-              task: task,
-              cameFrom: HOME_PAGE,
-            ),
-          ),
-        ).then((_) {
-          setState(() {});
-        });
-      },
-    );
-  }
-
-  List<Widget> allTaskTiles(List<Task> tasks, BuildContext context) {
-    List<ListTile> l = List<ListTile>();
-    for (int i = 0; i < tasks.length; i++) {
-      l.add(taskToTile(tasks[i], context));
-    }
-    return l;
-  }
-
-  List<Widget> buildCenterContentNotAuthorized() {
+  /*List<Widget> buildCenterContentNotAuthorized() {
     return [
       ListTile(
         title: SizedBox(height: 30),
@@ -236,9 +343,9 @@ class MyHomePageState extends State<MyHomePage> {
             style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
       ),
     ];
-  }
+  }*/
 
-  List<Widget> buildCenterContentWithNoTasks() {
+  /*List<Widget> buildCenterContentWithNoTasks() {
     return [
       ListTile(
         title: SizedBox(height: 30),
@@ -252,67 +359,205 @@ class MyHomePageState extends State<MyHomePage> {
             style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
       ),
       buttonListTile("Přidat úkol", screenWidth, () {
-        launchTaskSearch(context);
+        //launchTaskSearch(context);
       }),
     ];
+  }*/
+
+  Future<void> _onRefresh() async {
+    await Future.delayed(Duration(milliseconds: 1000));
+    Data.updateAllAndThen(() {
+      setState(() {});
+    });
   }
 
-  List<Widget> buildCenterContentWithTasks() {
-    return [
-          ListTile(
-            title: Image.asset('assets/img/pomuzemesi-logo.png'),
-          ),
-        ] +
-        allTaskTiles(Data.myTasks(), context);
+  ListView cards() {
+    List<Request> requests =
+        currentPage == 0 ? Data.myRequests : Data.otherRequests;
+    List<Widget> l = List<Widget>();
+    for (Request request in requests) {
+      l.add(CardBuilder.buildCard(
+        context: context,
+        request: request,
+        cameFrom: HOME_PAGE,
+        isDetail: false,
+        onReturn: () {
+          Data.updateAllAndThen(() {
+            setState(() {});
+          });
+        },
+      ));
+    }
+    return ListView(
+      children: l,
+    );
+  }
+
+  void switchToPage(int index) {
+    setState(() {
+      currentPage = index;
+    });
+  }
+
+  Widget settingsPageBody() {
+    TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
+    return ListView(children: <Widget>[
+      ExpansionTile(
+          title: Text("Můj profil"),
+          children: textWithPadding(Data.me.getNamesPhoneEmail(), screenWidth)),
+      CheckboxListTile(
+          title: Text('Dostávat notifikace do aplikace'),
+          subtitle: Text("V opačném případě budete dostávat SMS"),
+          secondary: Icon(Icons.notifications),
+          value: Data.preferences.notificationsToApp,
+          onChanged: (val) {
+            Data.toggleNotifications().then((_) {
+              setState(() {
+              });
+            });
+          }),
+    ]);
+  }
+
+  void sendFeedback() async {
+    final Email email = Email(
+      subject: 'Zpětná vazba na Pomůžeme.si',
+      body: 'Toto si myslím o Pomůžeme.si a/nebo této mobilní aplikaci: ',
+      recipients: [FEEDBACK_MAILBOX],
+    );
+    await FlutterEmailSender.send(email);
+  }
+
+  Widget aboutBody() {
+    return ListView(children: <Widget>[
+      ExpansionTile(
+        title: Text("O aplikaci"),
+        children: textWithPadding(["Vytvořeno v březnu 2020."], screenWidth),
+      ),
+      ExpansionTile(
+        title: Text("Privacy Policy"),
+        children:
+            textWithPadding(["TODO: Přidat privacy policy."], screenWidth),
+      ),
+      SizedBox(height: screenWidth * 0.05),
+      ListTile(
+        title: Text(
+            "Máte pro nás zpětnou vazbu? Pošlete nám ji, ať můžeme aplikaci vylepšit."),
+      ),
+      SizedBox(height: screenWidth * 0.05),
+      buttonListTile("Odeslat zpětnou vazbu", screenWidth, () {
+        sendFeedback();
+      }),
+    ]);
+  }
+
+  Widget noTasks() {
+    return ListView(
+      children: <Widget>[
+        imgBlock('undraw_no_data'),
+        ListTile(title: Center(child: Text('Nemáte žádné přijaté úkoly.'))),
+      ],
+    );
   }
 
   Widget buildReady() {
     screenWidth = MediaQuery.of(context).size.width;
-    firebaseMessaging.getToken().then((token) {
-      print("Firebase token: $token");
-    });
 
-    List<Widget> centerContent;
-    if (Data.authorized) {
-      if (Data.myTasks().length > 0) {
-        centerContent = buildCenterContentWithTasks();
-      } else {
-        centerContent = buildCenterContentWithNoTasks();
-      }
-    } else {
-      centerContent = buildCenterContentNotAuthorized();
+    Widget body;
+    switch (currentPage) {
+      case HOME_PAGE:
+      case TASKS_PAGE:
+        body = LiquidPullToRefresh(
+          child: (Data.myRequests.length == 0 && currentPage == HOME_PAGE)
+              ? noTasks()
+              : cards(),
+          onRefresh: _onRefresh,
+          showChildOpacityTransition: false,
+          color: PRIMARY_COLOR,
+        );
+        break;
+      case PROFILE_PAGE:
+        body = settingsPageBody();
+        break;
+      case ABOUT_PAGE:
+        body = aboutBody();
+        break;
     }
+
+    List<String> pageTitles = [
+      "Pomůžeme.si: Moje Úkoly",
+      "Pomůžeme.si: Poptávky",
+      "Pomůžeme.si: Profil",
+      "Pomůžeme.si: O Aplikaci"
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Pomůžeme.si - moje úkoly",
+          pageTitles[currentPage],
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: PRIMARY_COLOR,
       ),
-      body: ListView(children: <Widget>[] + centerContent + []),
-      bottomNavigationBar: bottomNavBar(context, 0),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Debug settings',
-        backgroundColor: Colors.red, //PRIMARY_COLOR,
-        child: Icon(Icons.settings),
-        onPressed: () {
-          showDebugDialog(() {
-            getPrefsThenBuild();
-            //setState(() {});
-          });
-        },
+      body: body,
+      /*
+      body: refresher(
+        controller: _refreshController,
+        onRefresh: _onRefresh,
+        onLoading: _onLoading,
+        itemCount: Data2.requests != null ? Data2.requests.length : 0,
+        cardBuilder: cardBuilder,
+      ),*/ //ListView(children: <Widget>[] + centerContent + []),
+      bottomNavigationBar:
+          bottomNavBar(context, currentPage, screenWidth, switchToPage),
+      floatingActionButton: currentPage == ABOUT_PAGE
+          ? FloatingActionButton(
+              tooltip: 'Debug settings',
+              backgroundColor: Colors.redAccent, //PRIMARY_COLOR,
+              child: Icon(Icons.settings),
+              onPressed: () {
+                showDebugDialog(() {
+                  setStateBlockingFetchAll();
+                  //setState(() {});
+                });
+              },
+            )
+          : null,
+    );
+  }
+
+  Widget buildHaveRegistration() {
+    return Scaffold(
+      body: ListView(
+        children: <Widget>[
+          SizedBox(height: screenWidth * 0.05),
+          imgBlock('pomuzemesi_phone'),
+          ListTile(
+            title: Text(
+                'Pro spuštění této aplikace musíte mít registraci na www.pomuzeme.si - pokud ji ještě nemáte, nejdříve se tam zaregistrujte.'),
+          ),
+          SizedBox(height: screenWidth * 0.1),
+          buttonListTile("Registraci mám", screenWidth, () {
+            setStateEnterPhone();
+          }),
+        ],
       ),
     );
   }
 
   Widget buildEnterPhoneNumber() {
+    // FIXME race condition
+    firebaseMessaging.getToken().then((firebaseToken) {
+      fcmToken = firebaseToken;
+      print("Firebase token: $firebaseToken");
+    });
+    debugPrint("build: auth token: $authToken");
     return Scaffold(
         body: Form(
       key: _formEnterPhoneKey,
       child: ListView(
         children: <Widget>[
-          imgBlock(),
+          imgBlock('pomuzemesi_phone'),
           ListTile(
             title: Text('Nejprve je potřeba ověřit Vaše telefonní číslo'),
           ),
@@ -324,6 +569,7 @@ class MyHomePageState extends State<MyHomePage> {
               leading: const Icon(Icons.smartphone),
               // leading: Text('+420'),
               title: TextFormField(
+                keyboardType: TextInputType.number,
                 controller: controllerPhoneNumber,
                 decoration: new InputDecoration(
                   hintText: "Vaše telefonní číslo",
@@ -335,8 +581,10 @@ class MyHomePageState extends State<MyHomePage> {
                   return null;
                 },
               )),
+          SizedBox(height: screenWidth * 0.05),
           buttonListTile("Získat ověřovací SMS", screenWidth, () {
             if (_formEnterPhoneKey.currentState.validate()) {
+              phoneNumber = controllerPhoneNumber.text;
               setStateWaitForSMS();
             }
           }),
@@ -345,21 +593,25 @@ class MyHomePageState extends State<MyHomePage> {
     ));
   }
 
-  Widget buildLoading() {
+  Widget buildLoading(String text) {
     return Scaffold(
-        body: Container(
-            //color: PRIMARY_COLOR,
-            child: Center(
-                child: //Loading(
-                    //indicator: BallPulseIndicator(), size: 100.0, color: PRIMARY_COLOR),
-                    //),
-                    LoadingBouncingGrid.square(
-      borderColor: PRIMARY_COLOR,
-      borderSize: 3.0,
-      size: 30.0,
-      backgroundColor: PRIMARY_COLOR,
-      duration: Duration(milliseconds: 1000),
-    ))));
+        body: Center(
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+          LoadingBouncingGrid.square(
+            borderColor: PRIMARY_COLOR,
+            borderSize: 3.0,
+            size: 30.0,
+            backgroundColor: PRIMARY_COLOR,
+            duration: Duration(milliseconds: 1000),
+          ),
+          SizedBox(height: screenWidth / 16),
+          Text(
+            text,
+            style: TextStyle(fontSize: screenWidth * 0.04),
+          ),
+        ])));
   }
 
   Widget buildEnterSMS() {
@@ -368,22 +620,16 @@ class MyHomePageState extends State<MyHomePage> {
       key: _formEnterSMSKey,
       child: ListView(
         children: <Widget>[
-          imgBlock(),
+          imgBlock('pomuzemesi_phone'),
           ListTile(
             title: Text(
                 'Poslali jsme Vám SMS s ověřovacím kódem. Ten sem, prosím, přepište.'),
           ),
           ListTile(
-            title: Text('Nepřišla SMS? Řekněte si o novou SMS (TODO).'),
-          ),
-          ListTile(
-            title: Text(
-                'TEST: 123456 je "správně" než to napárujem s backendem. Taky si zvolte, jestli "máte" registraci.'),
-          ),
-          ListTile(
               // TODO get from the phone automatically.
               leading: const Icon(Icons.textsms),
               title: TextFormField(
+                keyboardType: TextInputType.number,
                 controller: controllerSMS,
                 decoration: new InputDecoration(
                   hintText: "SMS kód",
@@ -395,21 +641,29 @@ class MyHomePageState extends State<MyHomePage> {
                   return null;
                 },
               )),
-          buttonListTile("Ověřit (TEST mám registraci)", screenWidth, () {
+          SizedBox(height: screenWidth * 0.05),
+          buttonListTile("Ověřit", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
-              setStateWaitForToken(controllerSMS.text, true);
+              setStateWaitForToken(controllerSMS.text /*, true*/);
             }
           }),
-          buttonListTile("Ověřit (TEST nemám registraci)", screenWidth, () {
+          ListTile(
+            title: Text('Nepřišla Vám SMS?'),
+          ),
+          buttonListTile("Odeslat novou SMS", screenWidth, () {
+            setStateWaitForSMS();
+          }, myButtonStyle: MyButtonStyle.light),
+          /*buttonListTile("Ověřit (TEST nemám registraci)", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
               setStateWaitForToken(controllerSMS.text, false);
             }
-          }),
+          }),*/
         ],
       ),
     ));
   }
 
+/*
   Widget buildWithRegistrationForm() {
     return Scaffold(
         body: getPersonalDetailsForm(
@@ -420,35 +674,52 @@ class MyHomePageState extends State<MyHomePage> {
             onProfileSaved: () {
               setStateUploadProfile();
             }));
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
+    // DEBUG
+    firebaseMessaging.getToken().then((firebaseToken) {
+      print("Firebase token: $firebaseToken");
+    });
+    debugPrint("build: auth token: $authToken");
     screenWidth = MediaQuery.of(context).size.width;
+    CardBuilder.setScreenWidth(screenWidth);
+    Widget body;
     if (!loaded) {
-      return buildLoading();
+      body = buildLoading('Načítám data ...');
     } else {
       // Login/registration flow.
-      if (token == null || !registrationDone) {
-        switch (homePageState) {
-          case HomePageState.enterPhone:
-            return buildEnterPhoneNumber();
-          case HomePageState.waitForSMS:
-            return buildLoading();
-          case HomePageState.enterSMS:
-            return buildEnterSMS();
-          case HomePageState.waitForToken:
-            return buildLoading();
-          case HomePageState.enterRegistrationDetails:
+      //if (authToken == null || !registrationDone) {
+      switch (homePageState) {
+        case HomePageState.haveRegistration:
+          body = buildHaveRegistration();
+          break;
+        case HomePageState.enterPhone:
+          body = buildEnterPhoneNumber();
+          break;
+        case HomePageState.waitForSMS:
+          body = buildLoading("Odesílám požadavek o potvrzovací SMS ...");
+          break;
+        case HomePageState.enterSMS:
+          body = buildEnterSMS();
+          break;
+        case HomePageState.waitForToken:
+          body = buildLoading("Čekám na potvrzení SMS kódu ...");
+          break;
+        /*case HomePageState.enterRegistrationDetails:
             return buildWithRegistrationForm();
           case HomePageState.uploadProfile:
-            return buildLoading();
-        }
-      } else {
-        // Normal case of being in the app.
-        return buildReady();
+            return buildLoading("Posílám registraci na server ...");*/
+        case HomePageState.blockingFetchAll:
+          body = buildLoading("Načítám data ...");
+          break;
+        case HomePageState.ready:
+          body = buildReady();
+          break;
       }
     }
+    return _wrapWithBanner(body);
   }
 
   void showDebugDialog(Function fn) async {
@@ -464,19 +735,6 @@ class MyHomePageState extends State<MyHomePage> {
                   MaterialButton(
                     color: Colors.red,
                     child: Text(
-                      'Přegenerovat data',
-                      style: TextStyle(
-                          fontSize: screenWidth * FONT_SIZE_NORMAL,
-                          color: Colors.white),
-                    ),
-                    onPressed: () {
-                      Data.initWithRandomData();
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  MaterialButton(
-                    color: Colors.red,
-                    child: Text(
                       'Zpět před login',
                       style: TextStyle(
                           fontSize: screenWidth * FONT_SIZE_NORMAL,
@@ -484,27 +742,75 @@ class MyHomePageState extends State<MyHomePage> {
                     ),
                     onPressed: () {
                       homePageState = HomePageState.enterPhone;
-                      registrationDone = false;
+                      //registrationDone = false;
+                      authToken = null;
+                      phoneNumber = null;
                       controllerPhoneNumber.text = '';
                       controllerSMS.text = '';
                       SharedPrefs.removeToken().then((_) {
+                        setStateHaveRegistration();
                         Navigator.of(context).pop();
                       });
                     },
                   ),
+                  /*
                   MaterialButton(
                     color: Colors.red,
                     child: Text(
-                      'Toggle ověřen organizací',
+                      'api page',
                       style: TextStyle(
                           fontSize: screenWidth * FONT_SIZE_NORMAL,
                           color: Colors.white),
                     ),
                     onPressed: () {
-                      Data.authorized = !Data.authorized;
-                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ApiPage(
+                            title: "api",
+                          ),
+                        ),
+                      );
                     },
                   ),
+            MaterialButton(
+              color: Colors.red,
+              child: Text(
+                'webview',
+                style: TextStyle(
+                    fontSize: screenWidth * FONT_SIZE_NORMAL,
+                    color: Colors.white),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WebviewPage(
+                      title: "webview",
+                    ),
+                  ),
+                );
+              },
+            ),
+                  MaterialButton(
+                    color: Colors.red,
+                    child: Text(
+                      'captcha',
+                      style: TextStyle(
+                          fontSize: screenWidth * FONT_SIZE_NORMAL,
+                          color: Colors.white),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CaptchaPage(
+                            title: "captcha",
+                          ),
+                        ),
+                      );
+                    },
+                  ),*/
                 ]),
             actions: <Widget>[
               new FlatButton(

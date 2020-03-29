@@ -1,79 +1,75 @@
-import 'dart:math';
 import 'model.dart';
-import 'testdata.dart';
-
-// NOTE: This fakes a layer that will in the future communicate with the backend.
+import 'rest_client.dart';
 
 class Data {
-  static List<Organization> organizations;
-  static List<Volunteer> volunteers;
-  static List<Task> tasks;
-  static List<Skill> skills;
+  static List<Request> allRequests, myRequests, otherRequests;
   static Volunteer me;
+  static VolunteerPreferences preferences;
 
-  // Overen organizaci
-  static bool authorized = false;
-  static bool getNotifications = true;
+  static Function _onRequestsUpdate, _onMeUpdate, _onPreferencesUpdate;
 
-  static void assignTask(int id, bool assign) {
-    tasks[id].isMine = assign;
-    if (assign) {
-      tasks[id].volunteersBooked++;
-    } else {
-      tasks[id].volunteersBooked--;
+  void setListeners(
+      {Function onRequestsUpdate,
+      Function onMeUpdate,
+      Function onPreferencesUpdate}) {
+    _onRequestsUpdate = onRequestsUpdate;
+    _onMeUpdate = onMeUpdate;
+    _onPreferencesUpdate = onPreferencesUpdate;
+  }
+
+  static Future<bool> toggleNotifications() async {
+    bool current = preferences.notificationsToApp;
+    bool newSetting = !current;
+    await RestClient.setNotificationsToApp(newSetting);
+    await updatePreferences();
+    return newSetting;
+  }
+
+  static void updateAllAndThen(Function fn) async {
+    Future.wait([updateRequests(), updatePreferences(), updateMe()]).then((_){
+      if (fn != null) {
+        fn();
+      }
+    });
+  }
+
+  static Future<bool> updateRequests() async {
+    List<Request> all = await RestClient.getVolunteerRequests();
+    List<Request> my = List<Request>();
+    List<Request> other = List<Request>();
+    for (Request r in all){
+      if (r.myState == 'accepted') {
+        my.add(r);
+      } else {
+        other.add(r);
+      }
     }
-  }
 
-  static void saveMyProfile(Volunteer newMe) {
-    me = newMe;
-  }
+    allRequests = all;
+    myRequests = my;
+    otherRequests = other;
 
-  static List<Task> myTasks() {
-    return tasks.where((t) => t.isMine).toList();
-  }
-
-  static List<Task> mySpecTasks() {
-    return tasks.where((t) => Data.iCanDoTask(t)).toList();
-  }
-
-  static List<Task> allTasks() {
-    return tasks;
-  }
-
-  static bool iHaveSkill(Skill skill) {
-    return me.skillIDs.contains(skill.id);
-  }
-
-  static bool iCanDoTask(Task task) {
-    return iHaveSkill(task.skillRequired);
-  }
-
-  static void toggleSkill(int skillID) {
-    if (me.skillIDs.contains(skillID)) {
-      me.skillIDs.remove(skillID);
-    } else {
-      me.skillIDs.add(skillID);
+    if (_onRequestsUpdate != null) {
+      _onRequestsUpdate();
     }
+    return true;
   }
 
-  static void toggleNotifications() {
-    getNotifications = !getNotifications;
+  static Future<bool> updateMe() async {
+    Volunteer r = await RestClient.getVolunteerProfile();
+    me = r;
+    if (_onMeUpdate != null) {
+      _onMeUpdate();
+    }
+    return true;
   }
 
-  static void initWithRandomData() {
-    organizations = ORGANIZATIONS;
-    skills = SKILLS;
-    Random r = Random();
-    int seed = r.nextInt(1000);
-    me = getRandomVolunteer(seed: seed);
-    tasks = List<Task>();
-    volunteers = List<Volunteer>();
-    int taskCount = 20 + r.nextInt(10);
-    for (int i = 0; i < taskCount; i++) {
-      tasks.add(getRandomTask(seed: seed + i, isMine: i == 0, id: i));
+  static Future<bool> updatePreferences() async {
+    VolunteerPreferences r = await RestClient.getVolunteerPreferences();
+    preferences = r;
+    if (_onPreferencesUpdate != null) {
+      _onPreferencesUpdate();
     }
-    for (int i = 0; i < 10; i++) {
-      volunteers.add(getRandomVolunteer(seed: seed + i + 1));
-    }
+    return true;
   }
 }
