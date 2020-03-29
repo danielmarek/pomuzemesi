@@ -16,9 +16,10 @@ import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 
 import 'dart:io';
 import 'dart:async';
+//import 'dart:ui' as ui;
 
-import 'data2.dart';
-import 'model2.dart';
+import 'data.dart';
+import 'model.dart';
 
 //import 'task_detail_page.dart';
 import 'misc.dart';
@@ -34,15 +35,26 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Crashlytics.instance.enableInDevMode = true;
   FlutterError.onError = Crashlytics.instance.recordFlutterError;
-  //Data.initWithRandomData();
   SharedPrefs.init();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) {
-    runApp(MyApp());
+    runApp(PomuzemeSiApp());
   });
 }
 
-class MyApp extends StatelessWidget {
+Widget _wrapWithBanner(Widget child) {
+  return Banner(
+    child: child,
+    location: BannerLocation.topStart,
+    message: 'BETA',
+    color: Colors.green.withOpacity(0.6),
+    textStyle: TextStyle(
+        fontWeight: FontWeight.w700, fontSize: 12.0, letterSpacing: 1.0),
+    textDirection: TextDirection.ltr,
+  );
+}
+
+class PomuzemeSiApp extends StatelessWidget {
   static FirebaseAnalytics analytics = FirebaseAnalytics();
   static FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
@@ -69,7 +81,7 @@ enum HomePageState {
   waitForToken,
   //enterRegistrationDetails,
   //uploadProfile,
-  firstFetch,
+  blockingFetchAll,
   ready,
 }
 
@@ -91,26 +103,21 @@ class MyHomePageState extends State<MyHomePage> {
 
   String fcmToken, authToken, phoneNumber;
   bool loaded = false;
-  bool registrationDone = false;
+
+  //bool registrationDone = false;
   int currentPage = HOME_PAGE;
 
   HomePageState homePageState = HomePageState.enterPhone;
 
-  final _formKey = GlobalKey<FormState>();
+  //final _formKey = GlobalKey<FormState>();
 
   //FormControllers controllers = FormControllers();
 
-  Future<bool> getPrefsThenBuild() async {
-    authToken = await SharedPrefs.getToken();
-    if (authToken != null) {
-      setStateFirstFetch();
-      loaded = true;
-      return true;
-    }
-    setState(() {
-      loaded = true;
-    });
-    return true;
+  @override
+  void initState() {
+    super.initState();
+    firebaseCloudMessagingSetUpListeners(firebaseMessaging);
+    setStateBlockingFetchAll();
   }
 
   @override
@@ -120,28 +127,60 @@ class MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    firebaseCloudMessagingSetUpListeners(firebaseMessaging);
-    getPrefsThenBuild();
+  /*Future<bool> getPrefsThenBuild() async {
+    authToken = await SharedPrefs.getToken();
+    loaded = true;
+    if (authToken != null) {
+      setStateBlockingFetchAll();
+      loaded = true;
+      return true;
+    }
+    setStateEnterPhone();
+    return true;
+  }*/
+
+  Future<bool> setStateEnterPhone() async {
+    setState(() {
+      homePageState = HomePageState.enterPhone;
+    });
+    return true;
   }
 
-  void setStateEnterSMS() {
+  Future<bool> setStateEnterSMS() async {
+    controllerSMS.text = '';
     setState(() {
       homePageState = HomePageState.enterSMS;
     });
+    return true;
   }
 
-  void setStateWaitForSMS(String phone) async {
-    phoneNumber = phone;
-    await RestClient.sessionNew(phone, 'foobar', fcmToken);
+  void setStateWaitForSMS() async {
     setState(() {
       homePageState = HomePageState.waitForSMS;
-      Timer(const Duration(seconds: 2), () {
-        setStateEnterSMS();
-      });
     });
+    askForSMS();
+  }
+
+  void askForSMS() async {
+    //phoneNumber = phone;
+    try {
+      // TODO: captcha token.
+      await RestClient.sessionNew(phoneNumber, 'foobar', fcmToken);
+      setStateEnterSMS();
+    } on APICallException catch (e) {
+      if (e.errorCode == 404) {
+        setStateEnterPhone().then((_) {
+          showDialogWithText(
+              context,
+              'Nenalezena registrace pro toto telefonní číslo. Registrujte se na www.pomuzeme.si a pak zde zadejte telefonní číslo znovu.',
+              null);
+        });
+      } else {
+        setStateEnterPhone().then((_) {
+          showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
+        });
+      }
+    }
   }
 
   /*void setStateEnterRegistrationDetails() {
@@ -151,14 +190,16 @@ class MyHomePageState extends State<MyHomePage> {
   }*/
 
   void setStateReady() {
-    registrationDone = true;
+    //registrationDone = true;
     homePageState = HomePageState.ready;
-    getPrefsThenBuild().then((_) {
+    setState(() {});
+    // TODO first info about firebase message preferences.
+    /*getPrefsThenBuild().then((_) {
       showDialogWithText(
           context,
           "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.",
           () {});
-    });
+    });*/
   }
 
   /*void setStateUploadProfile() {
@@ -170,42 +211,77 @@ class MyHomePageState extends State<MyHomePage> {
     });
   }*/
 
-  void setStateWaitForToken(String smsCode, bool hasRegistration) async {
-    // FIXME flow
-    authToken = await RestClient.sessionCreate(phoneNumber, smsCode);
-    RestClient.token = authToken;
+  void setStateWaitForToken(String smsCode /*, bool hasRegistration*/) async {
     setState(() {
       homePageState = HomePageState.waitForToken;
-      Timer(const Duration(seconds: 2), () {
-        //tryToValidateSMS(smsCode, hasRegistration);
-        setStateFirstFetch();
-      });
     });
+    submitSMSCode(smsCode);
   }
 
-  void setStateFirstFetch() async {
+  void submitSMSCode(String smsCode) async {
     try {
-      await Data2.updateRequests();
-      await Data2.updateMe();
-      await Data2.updatePreferences();
+      authToken = await RestClient.sessionCreate(phoneNumber, smsCode);
+      RestClient.token = authToken;
+      await SharedPrefs.setToken(authToken);
+      setStateBlockingFetchAll();
+    } on APICallException catch (e) {
+      if (e.errorCode == 401) {
+        setStateEnterSMS().then((_) {
+          showDialogWithText(
+              context, 'Špatně zadaný kód, zkuste to znovu.', null);
+        });
+        // TODO double-check this is what the backend indeed returns.
+      } else if (e.errorCode == 429) {
+        setStateEnterPhone().then((_) {
+          showDialogWithText(
+              context,
+              'Vyčerpali jste počet pokusů na zadání kódu. Zadejte telefonní číslo znovu.',
+              null);
+        });
+      } else {
+        setStateEnterSMS().then((_) {
+          showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
+        });
+      }
+    }
+  }
+
+  Future<bool> setStateBlockingFetchAll() async {
+    setState(() {
+      homePageState = HomePageState.blockingFetchAll;
+    });
+    blockingFetchAll();
+    return true;
+  }
+
+  Future<bool> blockingFetchAll() async {
+    authToken = await SharedPrefs.getToken();
+    RestClient.token = authToken;
+    loaded = true;
+    debugPrint("blockingFetchAll: auth token: $authToken");
+    if (authToken == null) {
+      setStateEnterPhone();
+      return true;
+    }
+    try {
+      await Data.updateRequests();
+      await Data.updateMe();
+      await Data.updatePreferences();
+      setStateReady();
     } on APICallException catch (e) {
       // Unauthorized resource.
       if (e.errorCode == 401) {
+        debugPrint("blockingFetchAll: 401");
         homePageState = HomePageState.enterPhone;
         controllerSMS.text = '';
         await SharedPrefs.removeToken();
         setState(() {});
-        return;
+        return true;
+      } else {
+        // TODO other errors.
       }
     }
-
-    setState(() {
-      homePageState = HomePageState.firstFetch;
-      Timer(const Duration(seconds: 2), () {
-        //tryToValidateSMS(smsCode, hasRegistration);
-        setStateReady();
-      });
-    });
+    return true;
   }
 
   /*void tryToValidateSMS(String smsCode, bool hasRegistration) {
@@ -281,16 +357,16 @@ class MyHomePageState extends State<MyHomePage> {
 
   Future<void> _onRefresh() async {
     await Future.delayed(Duration(milliseconds: 1000));
-    await Data2.updateRequests();
+    await Data.updateRequests();
     //_refreshController.refreshCompleted();
     setState(() {});
   }
 
   ListView cards() {
-    List<Request2> requests =
-        currentPage == 0 ? Data2.myRequests : Data2.otherRequests;
+    List<Request> requests =
+        currentPage == 0 ? Data.myRequests : Data.otherRequests;
     List<Widget> l = List<Widget>();
-    for (Request2 request in requests) {
+    for (Request request in requests) {
       l.add(cardBuilder(
           context: context,
           request: request,
@@ -312,25 +388,18 @@ class MyHomePageState extends State<MyHomePage> {
   Widget settingsPageBody() {
     TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
     return ListView(children: <Widget>[
-      ExpansionTile(title: Text("Můj profil"), children: <Widget>[
-        Padding(
-            padding: EdgeInsets.only(
-                left: screenWidth * 0.04,
-                right: screenWidth * 0.04,
-                bottom: screenWidth * 0.04),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text("${Data2.me.firstName} ${Data2.me.lastName}", style: ts),
-                  Text(Data2.me.phone, style: ts),
-                  Text(Data2.me.email, style: ts),
-                ]))
-      ]),
+      ExpansionTile(
+          title: Text("Můj profil"),
+          children: textWithPadding([
+            "${Data.me.firstName} ${Data.me.lastName}",
+            Data.me.phone,
+            Data.me.email
+          ], screenWidth)),
       CheckboxListTile(
           title: Text('Dostávat notifikace do aplikace'),
           subtitle: Text("V opačném případě budete dostávat SMS"),
           secondary: Icon(Icons.notifications),
-          value: Data2.preferences.notificationsToApp,
+          value: Data.preferences.notificationsToApp,
           onChanged: (val) {
             setState(() {
               //Data2.toggleNotifications();
@@ -340,23 +409,13 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Widget aboutBody() {
-    TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
     return ListView(children: <Widget>[
-      ExpansionTile(title: Text("O aplikaci"), children: <Widget>[
-        Padding(
-            padding: EdgeInsets.only(
-                left: screenWidth * 0.04,
-                right: screenWidth * 0.04,
-                bottom: screenWidth * 0.04),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text("Vytvořeno v březnu 2020.", style: ts),
-                ]))
-      ]),
-      ExpansionTile(title: Text("Privacy Policy"), children: <Widget>[
-        Text("TODO: přidat privacy policy"),
-      ]),
+      ExpansionTile(title: Text("O aplikaci"), children:
+      textWithPadding(["Vytvořeno v březnu 2020."], screenWidth),
+      ),
+      ExpansionTile(title: Text("Privacy Policy"), children:
+      textWithPadding(["TODO: Přidat privacy policy."], screenWidth),
+      ),
     ]);
   }
 
@@ -407,17 +466,19 @@ class MyHomePageState extends State<MyHomePage> {
         cardBuilder: cardBuilder,
       ),*/ //ListView(children: <Widget>[] + centerContent + []),
       bottomNavigationBar: bottomNavBar(context, currentPage, switchToPage),
-      floatingActionButton: currentPage == ABOUT_PAGE ? FloatingActionButton(
-        tooltip: 'Debug settings',
-        backgroundColor: Colors.redAccent, //PRIMARY_COLOR,
-        child: Icon(Icons.settings),
-        onPressed: () {
-          showDebugDialog(() {
-            getPrefsThenBuild();
-            //setState(() {});
-          });
-        },
-      ) : null,
+      floatingActionButton: currentPage == ABOUT_PAGE
+          ? FloatingActionButton(
+              tooltip: 'Debug settings',
+              backgroundColor: Colors.redAccent, //PRIMARY_COLOR,
+              child: Icon(Icons.settings),
+              onPressed: () {
+                showDebugDialog(() {
+                  setStateBlockingFetchAll();
+                  //setState(() {});
+                });
+              },
+            )
+          : null,
     );
   }
 
@@ -427,6 +488,7 @@ class MyHomePageState extends State<MyHomePage> {
       fcmToken = firebaseToken;
       print("Firebase token: $firebaseToken");
     });
+    debugPrint("build: auth token: $authToken");
     return Scaffold(
         body: Form(
       key: _formEnterPhoneKey,
@@ -444,6 +506,7 @@ class MyHomePageState extends State<MyHomePage> {
               leading: const Icon(Icons.smartphone),
               // leading: Text('+420'),
               title: TextFormField(
+                keyboardType: TextInputType.number,
                 controller: controllerPhoneNumber,
                 decoration: new InputDecoration(
                   hintText: "Vaše telefonní číslo",
@@ -457,7 +520,8 @@ class MyHomePageState extends State<MyHomePage> {
               )),
           buttonListTile("Získat ověřovací SMS", screenWidth, () {
             if (_formEnterPhoneKey.currentState.validate()) {
-              setStateWaitForSMS(controllerPhoneNumber.text);
+              phoneNumber = controllerPhoneNumber.text;
+              setStateWaitForSMS();
             }
           }),
         ],
@@ -498,12 +562,10 @@ class MyHomePageState extends State<MyHomePage> {
                 'Poslali jsme Vám SMS s ověřovacím kódem. Ten sem, prosím, přepište.'),
           ),
           ListTile(
-            title: Text('Nepřišla SMS? Řekněte si o novou SMS (TODO).'),
-          ),
-          ListTile(
               // TODO get from the phone automatically.
               leading: const Icon(Icons.textsms),
               title: TextFormField(
+                keyboardType: TextInputType.number,
                 controller: controllerSMS,
                 decoration: new InputDecoration(
                   hintText: "SMS kód",
@@ -517,9 +579,15 @@ class MyHomePageState extends State<MyHomePage> {
               )),
           buttonListTile("Ověřit", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
-              setStateWaitForToken(controllerSMS.text, true);
+              setStateWaitForToken(controllerSMS.text /*, true*/);
             }
           }),
+          ListTile(
+            title: Text('Nepřišla Vám SMS?'),
+          ),
+          buttonListTile("Odeslat novou SMS", screenWidth, () {
+            setStateWaitForSMS();
+          }, light: true),
           /*buttonListTile("Ověřit (TEST nemám registraci)", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
               setStateWaitForToken(controllerSMS.text, false);
@@ -549,35 +617,40 @@ class MyHomePageState extends State<MyHomePage> {
     firebaseMessaging.getToken().then((firebaseToken) {
       print("Firebase token: $firebaseToken");
     });
+    debugPrint("build: auth token: $authToken");
     screenWidth = MediaQuery.of(context).size.width;
+    Widget body;
     if (!loaded) {
-      return buildLoading('Načítám data ...');
+      body = buildLoading('Načítám data ...');
     } else {
       // Login/registration flow.
       //if (authToken == null || !registrationDone) {
       switch (homePageState) {
         case HomePageState.enterPhone:
-          return buildEnterPhoneNumber();
+          body = buildEnterPhoneNumber();
+          break;
         case HomePageState.waitForSMS:
-          return buildLoading("Odesílám požadavek o potvrzovací SMS ...");
+          body = buildLoading("Odesílám požadavek o potvrzovací SMS ...");
+          break;
         case HomePageState.enterSMS:
-          return buildEnterSMS();
+          body = buildEnterSMS();
+          break;
         case HomePageState.waitForToken:
-          return buildLoading("Čekám na potvrzení SMS kódu ...");
+          body = buildLoading("Čekám na potvrzení SMS kódu ...");
+          break;
         /*case HomePageState.enterRegistrationDetails:
             return buildWithRegistrationForm();
           case HomePageState.uploadProfile:
             return buildLoading("Posílám registraci na server ...");*/
-        case HomePageState.firstFetch:
-          return buildLoading("Načítám data ...");
+        case HomePageState.blockingFetchAll:
+          body = buildLoading("Načítám data ...");
+          break;
         case HomePageState.ready:
-          return buildReady();
+          body = buildReady();
+          break;
       }
-      /* } else {
-        // Normal case of being in the app.
-        return buildReady();
-      }*/
     }
+    return _wrapWithBanner(body);
   }
 
   void showDebugDialog(Function fn) async {
@@ -600,7 +673,9 @@ class MyHomePageState extends State<MyHomePage> {
                     ),
                     onPressed: () {
                       homePageState = HomePageState.enterPhone;
-                      registrationDone = false;
+                      //registrationDone = false;
+                      authToken = null;
+                      phoneNumber = null;
                       controllerPhoneNumber.text = '';
                       controllerSMS.text = '';
                       SharedPrefs.removeToken().then((_) {

@@ -1,13 +1,10 @@
-import 'dart:math';
-import 'model2.dart';
-
-//import 'testdata.dart';
+import 'model.dart';
 import 'rest_client.dart';
 
-class Data2 {
-  static List<Request2> allRequests, myRequests, otherRequests;
-  static Volunteer2 me;
-  static Preferences2 preferences;
+class Data {
+  static List<Request> allRequests, myRequests, otherRequests;
+  static Volunteer me;
+  static VolunteerPreferences preferences;
 
   static Function _onRequestsUpdate, _onMeUpdate, _onPreferencesUpdate;
 
@@ -19,12 +16,20 @@ class Data2 {
     _onMeUpdate = onMeUpdate;
     _onPreferencesUpdate = onPreferencesUpdate;
   }
-
+/*
+  void updateAllAndThen(Function fn) async {
+    Future.wait([updateRequests(), updatePreferences(), updateMe()]).then((_){
+      if (fn != null) {
+        fn();
+      }
+    });
+  }
+*/
   static Future<bool> updateRequests() async {
-    List<Request2> all = await RestClient.getVolunteerRequests();
-    List<Request2> my = List<Request2>();
-    List<Request2> other = List<Request2>();
-    for (Request2 r in all){
+    List<Request> all = await RestClient.getVolunteerRequests();
+    List<Request> my = List<Request>();
+    List<Request> other = List<Request>();
+    for (Request r in all){
       if (r.myState == 'accepted') {
         my.add(r);
       } else {
@@ -43,7 +48,7 @@ class Data2 {
   }
 
   static Future<bool> updateMe() async {
-    Volunteer2 r = await RestClient.getVolunteerProfile();
+    Volunteer r = await RestClient.getVolunteerProfile();
     me = r;
     if (_onMeUpdate != null) {
       _onMeUpdate();
@@ -52,7 +57,7 @@ class Data2 {
   }
 
   static Future<bool> updatePreferences() async {
-    Preferences2 r = await RestClient.getVolunteerPreferences();
+    VolunteerPreferences r = await RestClient.getVolunteerPreferences();
     preferences = r;
     if (_onPreferencesUpdate != null) {
       _onPreferencesUpdate();

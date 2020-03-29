@@ -1,15 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:pomuzemesi/task_detail_page2.dart';
+import 'package:pomuzemesi/task_detail_page.dart';
 //import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-//import 'data.dart';
-import 'data2.dart';
-//import 'list_tasks_page.dart';
+import 'data.dart';
 import 'misc.dart';
-import 'model2.dart';
-//import 'privacy_policy_page.dart';
+import 'model.dart';
 
 BottomNavigationBar bottomNavBar(BuildContext context, int pageId, Function(int) switchToTab) {
   return BottomNavigationBar(
@@ -42,17 +39,17 @@ BottomNavigationBar bottomNavBar(BuildContext context, int pageId, Function(int)
   );
 }
 
-ListTile buttonListTile(String text, double screenWidth, Function onPressed) {
+ListTile buttonListTile(String text, double screenWidth, Function onPressed, {bool light = false}) {
   return ListTile(
       title: SizedBox(
           height: screenWidth * 0.1,
           child: MaterialButton(
-            color: SECONDARY_COLOR,
+            color: light ? Colors.white : SECONDARY_COLOR,
             child: Text(
               text,
               style: TextStyle(
                   fontSize: screenWidth * FONT_SIZE_NORMAL,
-                  color: Colors.white),
+                  color: light ? SECONDARY_COLOR : Colors.white),
             ),
             onPressed: onPressed,
           )));
@@ -88,7 +85,9 @@ void showDialogWithText(BuildContext context, String title, Function fn) async {
           ],
         );
       }).then((val) {
-    fn();
+        if (fn != null) {
+          fn();
+        }
   });
 }
 /*
@@ -139,7 +138,7 @@ SmartRefresher refresher({
 
 Widget cardBuilder({
   @required BuildContext context,
-  @required Request2 request,
+  @required Request request,
   @required int cameFrom,
   @required double screenWidth,
   @required bool isDetail,
@@ -263,7 +262,7 @@ Widget cardBuilder({
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DetailPage2(
+                      builder: (context) => DetailPage(
                         title: "Detail úkolu",
                         request: request,
                         cameFrom: cameFrom,
@@ -273,4 +272,21 @@ Widget cardBuilder({
                 },
                 child: content)));
   }
+}
+
+List<Widget> textWithPadding(List<String> texts, double screenWidth) {
+  TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
+  List<Widget> l = List<Widget>();
+  for (String t in texts) {
+    l.add(Text(t, style: ts));
+  }
+  return <Widget>[
+    Padding(
+        padding: EdgeInsets.only(
+            left: screenWidth * 0.04,
+            right: screenWidth * 0.04,
+            bottom: screenWidth * 0.04),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch, children: l))
+  ];
 }

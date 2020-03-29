@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'dart:convert';
 
-import 'model2.dart';
+import 'model.dart';
 
 // TODO distinguish between different non-200s
 
@@ -19,7 +19,7 @@ class APICallException implements Exception {
 class RestClient {
 
   static String BASE_URL = "https://pomuzeme-si-mobile-api.herokuapp.com/";
-  static String token;  //= "eyJhbGciOiJIUzI1NiJ9.eyJ2b2x1bnRlZXJfaWQiOjIsImV4cCI6MTU4NzgyODAyOX0.5BswxsB-Ef4i-krQMkt3mBrXg6TcZb4SiF3LHAlWXFY";
+  static String token;
   static http.Client httpClient = new http.Client();
 
 /*
@@ -41,7 +41,11 @@ class RestClient {
     debugPrint("response code: ${response.statusCode}");
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
-    return true;
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw APICallException(response.statusCode, response.body);
+    }
   }
 
   static Future<String> sessionCreate(String phone, String code) async {
@@ -52,11 +56,15 @@ class RestClient {
     debugPrint("response code: ${response.statusCode}");
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
-    var r = json.decode(response.body);
-    return r['token'];
+    if (response.statusCode == 200) {
+      var r = json.decode(response.body);
+      return r['token'];
+    } else {
+      throw APICallException(response.statusCode, response.body);
+    }
   }
 
-  static Future<Preferences2> getVolunteerPreferences() async {
+  static Future<VolunteerPreferences> getVolunteerPreferences() async {
     String url = BASE_URL + '/api/v1/volunteer/preferences';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
@@ -67,13 +75,13 @@ class RestClient {
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
     if (response.statusCode == 200) {
-      return Preferences2.fromRawJson(response.body);
+      return VolunteerPreferences.fromRawJson(response.body);
     } else {
       throw APICallException(response.statusCode, response.body);
     }
   }
 
-  static Future<Volunteer2> getVolunteerProfile() async {
+  static Future<Volunteer> getVolunteerProfile() async {
     String url = BASE_URL + '/api/v1/volunteer/profile';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
@@ -84,13 +92,13 @@ class RestClient {
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
     if (response.statusCode == 200) {
-      return Volunteer2.fromRawJson(response.body);
+      return Volunteer.fromRawJson(response.body);
     } else {
       throw APICallException(response.statusCode, response.body);
     }
   }
 
-  static void setNotificationsToApp(bool sendNotificationsToApp) async {
+  Future<bool> setNotificationsToApp(bool sendNotificationsToApp) async {
     String value = sendNotificationsToApp ? 'true' : 'false';
     String url = BASE_URL + '/api/v1/volunteer/preferences?notifications_to_app=$value';
     debugPrint("calling $url ...");
@@ -101,9 +109,14 @@ class RestClient {
     debugPrint("response code: ${response.statusCode}");
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw APICallException(response.statusCode, response.body);
+    }
   }
 
-  static Future<List<Request2>> getVolunteerRequests() async {
+  static Future<List<Request>> getVolunteerRequests() async {
     String url = BASE_URL + '/api/v1/volunteer/requests';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
@@ -116,7 +129,7 @@ class RestClient {
     debugPrint("response body:\n${response.body}");
 
     if (response.statusCode == 200) {
-      List<Request2> requests = Request2.listFromRawJson(response.body);
+      List<Request> requests = Request.listFromRawJson(response.body);
       return requests;
     } else {
       throw APICallException(response.statusCode, response.body);
@@ -125,7 +138,6 @@ class RestClient {
 
   static Future<bool> respondToRequest(int id, bool accept) async {
     String acceptStr = accept ? 'true' : 'false';
-    //http.Client httpClient = new http.Client();
     String url = BASE_URL + '/api/v1/volunteer/requests/$id/respond?accept=$acceptStr';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.post(

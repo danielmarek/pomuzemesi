@@ -2,27 +2,27 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 
-import 'data2.dart';
-import 'model2.dart';
+import 'data.dart';
+import 'model.dart';
 import 'misc.dart';
 import 'rest_client.dart';
 import 'widget_misc.dart';
 
 
-class DetailPage2 extends StatefulWidget {
-  DetailPage2({Key key, this.title, this.request, @required this.cameFrom})
+class DetailPage extends StatefulWidget {
+  DetailPage({Key key, this.title, this.request, @required this.cameFrom})
       : super(key: key);
 
   final String title;
   //final Task task;
   final int cameFrom;
-  final Request2 request;
+  final Request request;
 
   @override
-  _DetailPage2State createState() => _DetailPage2State();
+  _DetailPageState createState() => _DetailPageState();
 }
 
-class _DetailPage2State extends State<DetailPage2> {
+class _DetailPageState extends State<DetailPage> {
   double screenWidth;
 
   void acceptTask() async {

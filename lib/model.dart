@@ -30,7 +30,7 @@ import 'dart:convert';
   "address":null,
   "all_details_granted":false}]
  */
-class Request2 {
+class Request {
   // TODO backend:
   // - longDescription?
   // - coordinatorPhone?
@@ -61,15 +61,15 @@ class Request2 {
   final String subscriberPhone;
   final bool allDetailsGranted;
 
-  Request2({this.id, this.state, this.myState, this.shortDescription, this.city,
+  Request({this.id, this.state, this.myState, this.shortDescription, this.city,
       this.cityPart, this.address, this.organisationID, this.fulfillmentDate,
       this.requiredVolunteerCount, this.acceptedVolunteerCount, this.createdAt,
       this.updatedAt, this.closedState, this.closedNote, this.coordinatorEmail,
       this.coordinatorFirstName, this.coordinatorLastName, this.subscriber,
       this.subscriberPhone, this.allDetailsGranted});
 
-  static Request2 fromParsedJson(var r) {
-    return Request2(
+  static Request fromParsedJson(var r) {
+    return Request(
       id: r['id'],
       state: r['state'],
       myState: r['requested_volunteer_state'],
@@ -95,12 +95,12 @@ class Request2 {
     );
   }
 
-  static List<Request2> listFromRawJson(String jsonData) {
-    List<Request2> l = List<Request2>();
+  static List<Request> listFromRawJson(String jsonData) {
+    List<Request> l = List<Request>();
     var parsedJson = json.decode(jsonData);
     for (int i = 0; i < parsedJson.length; i++) {
       var r = parsedJson[i];
-      l.add(Request2.fromParsedJson(r));
+      l.add(Request.fromParsedJson(r));
     }
     return l;
   }
@@ -132,7 +132,7 @@ class Request2 {
  }
  */
 
-class Address2 {
+class Address {
   final int id;
   final String street, streetNumber, city, cityPart, postalCode, countryCode;
   final String geoEntryID, geoUnitID, geoProvider, coordinate;
@@ -140,13 +140,13 @@ class Address2 {
   final int addressableID;
   final String createdAt, updatedAt;
 
-  Address2({this.id, this.street, this.streetNumber, this.city,
+  Address({this.id, this.street, this.streetNumber, this.city,
       this.cityPart, this.postalCode, this.countryCode, this.geoEntryID,
       this.geoUnitID, this.geoProvider, this.coordinate, this.addressableType,
       this.addressableID, this.createdAt, this.updatedAt});
 
-  static Address2 fromParsedJson(var a){
-    return Address2(
+  static Address fromParsedJson(var a){
+    return Address(
         id: a['id'],
         street: a['street'],
         streetNumber: a['street_number'],
@@ -166,35 +166,35 @@ class Address2 {
   }
 }
 
-class Volunteer2 {
+class Volunteer {
   final int id;
   final String firstName, lastName, email, phone;
-  final Address2 address;
+  final Address address;
 
-  Volunteer2({this.id, this.firstName, this.lastName, this.email,
+  Volunteer({this.id, this.firstName, this.lastName, this.email,
       this.phone, this.address});
 
-  static Volunteer2 fromRawJson(String jsonData) {
+  static Volunteer fromRawJson(String jsonData) {
     var v = json.decode(jsonData);
-    return Volunteer2(
+    return Volunteer(
       id: v['id'],
       firstName: v['first_name'],
       lastName: v['last_name'],
       email: v['email'],
       phone: v['phone'],
-      address: Address2.fromParsedJson(v['address']),
+      address: Address.fromParsedJson(v['address']),
     );
   }
 }
 
-class Preferences2 {
+class VolunteerPreferences {
   final bool notificationsToApp;
 
-  Preferences2({this.notificationsToApp});
+  VolunteerPreferences({this.notificationsToApp});
 
-  static Preferences2 fromRawJson(String jsonData) {
+  static VolunteerPreferences fromRawJson(String jsonData) {
     var v = json.decode(jsonData);
-    return Preferences2(
+    return VolunteerPreferences(
       notificationsToApp: v['notifications_to_app'],
     );
   }
