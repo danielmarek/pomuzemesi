@@ -310,7 +310,7 @@ class MyHomePageState extends State<MyHomePage> {
     }
   }*/
 
-  Widget imgBlock() {
+  Widget imgBlock(String filename) {
     return ListTile(
       title: Padding(
         padding: EdgeInsets.only(
@@ -319,7 +319,7 @@ class MyHomePageState extends State<MyHomePage> {
           top: screenWidth * 0.2,
           bottom: screenWidth * 0.1,
         ),
-        child: Image.asset('assets/img/pomuzemesi_phone.png'),
+        child: Image.asset('assets/img/$filename.png'),
       ),
     );
   }
@@ -453,6 +453,15 @@ class MyHomePageState extends State<MyHomePage> {
     ]);
   }
 
+  Widget noTasks() {
+    return ListView(
+      children: <Widget>[
+        imgBlock('undraw_no_data'),
+        ListTile(title: Center(child: Text('Nemáte žádné přijaté úkoly.'))),
+      ],
+    );
+  }
+
   Widget buildReady() {
     screenWidth = MediaQuery.of(context).size.width;
 
@@ -461,7 +470,7 @@ class MyHomePageState extends State<MyHomePage> {
       case HOME_PAGE:
       case TASKS_PAGE:
         body = LiquidPullToRefresh(
-          child: cards(),
+          child: (Data.myRequests.length == 0 && currentPage == HOME_PAGE) ? noTasks() : cards(),
           onRefresh: _onRefresh,
           showChildOpacityTransition: false,
           color: PRIMARY_COLOR,
@@ -520,7 +529,7 @@ class MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       body: ListView(
         children: <Widget>[
-          imgBlock(),
+          imgBlock('pomuzemesi_phone'),
           ListTile(
             title: Text(
                 'Pro spuštění této aplikace musíte mít registraci na www.pomuzeme.si - pokud ji ještě nemáte, nejdříve se tam zaregistrujte.'),
@@ -545,7 +554,7 @@ class MyHomePageState extends State<MyHomePage> {
       key: _formEnterPhoneKey,
       child: ListView(
         children: <Widget>[
-          imgBlock(),
+          imgBlock('pomuzemesi_phone'),
           ListTile(
             title: Text('Nejprve je potřeba ověřit Vaše telefonní číslo'),
           ),
@@ -607,7 +616,7 @@ class MyHomePageState extends State<MyHomePage> {
       key: _formEnterSMSKey,
       child: ListView(
         children: <Widget>[
-          imgBlock(),
+          imgBlock('pomuzemesi_phone'),
           ListTile(
             title: Text(
                 'Poslali jsme Vám SMS s ověřovacím kódem. Ten sem, prosím, přepište.'),
