@@ -5,23 +5,25 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_animations/loading_animations.dart';
+
 //import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 
-
 // FIXME DEBUG
-import 'api_page.dart';
-import 'a_webview_page.dart';
-import 'captcha_page.dart';
+//import 'api_page.dart';
+//import 'a_webview_page.dart';
+//import 'captcha_page.dart';
 
 import 'dart:io';
 import 'dart:async';
 
 import 'data2.dart';
 import 'model2.dart';
+
 //import 'task_detail_page.dart';
 import 'misc.dart';
-import 'personal_details_form.dart';
+
+//import 'personal_details_form.dart';
 import 'rest_client.dart';
 import 'shared_prefs.dart';
 import 'widget_misc.dart';
@@ -65,8 +67,8 @@ enum HomePageState {
   waitForSMS,
   enterSMS,
   waitForToken,
-  enterRegistrationDetails,
-  uploadProfile,
+  //enterRegistrationDetails,
+  //uploadProfile,
   firstFetch,
   ready,
 }
@@ -95,7 +97,8 @@ class MyHomePageState extends State<MyHomePage> {
   HomePageState homePageState = HomePageState.enterPhone;
 
   final _formKey = GlobalKey<FormState>();
-  FormControllers controllers = FormControllers();
+
+  //FormControllers controllers = FormControllers();
 
   Future<bool> getPrefsThenBuild() async {
     authToken = await SharedPrefs.getToken();
@@ -141,11 +144,11 @@ class MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void setStateEnterRegistrationDetails() {
+  /*void setStateEnterRegistrationDetails() {
     setState(() {
       homePageState = HomePageState.enterRegistrationDetails;
     });
-  }
+  }*/
 
   void setStateReady() {
     registrationDone = true;
@@ -158,14 +161,14 @@ class MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void setStateUploadProfile() {
+  /*void setStateUploadProfile() {
     setState(() {
       homePageState = HomePageState.uploadProfile;
       Timer(const Duration(seconds: 2), () {
         setStateReady();
       });
     });
-  }
+  }*/
 
   void setStateWaitForToken(String smsCode, bool hasRegistration) async {
     // FIXME flow
@@ -236,7 +239,7 @@ class MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  List<Widget> buildCenterContentNotAuthorized() {
+  /*List<Widget> buildCenterContentNotAuthorized() {
     return [
       ListTile(
         title: SizedBox(height: 30),
@@ -255,9 +258,9 @@ class MyHomePageState extends State<MyHomePage> {
             style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
       ),
     ];
-  }
+  }*/
 
-  List<Widget> buildCenterContentWithNoTasks() {
+  /*List<Widget> buildCenterContentWithNoTasks() {
     return [
       ListTile(
         title: SizedBox(height: 30),
@@ -274,7 +277,7 @@ class MyHomePageState extends State<MyHomePage> {
         //launchTaskSearch(context);
       }),
     ];
-  }
+  }*/
 
   Future<void> _onRefresh() async {
     await Future.delayed(Duration(milliseconds: 1000));
@@ -284,7 +287,8 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   ListView cards() {
-    List<Request2> requests = currentPage == 0 ? Data2.myRequests : Data2.otherRequests;
+    List<Request2> requests =
+        currentPage == 0 ? Data2.myRequests : Data2.otherRequests;
     List<Widget> l = List<Widget>();
     for (Request2 request in requests) {
       l.add(cardBuilder(
@@ -306,16 +310,22 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Widget settingsPageBody() {
+    TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
     return ListView(children: <Widget>[
-      ExpansionTile(
-        title: Text("Můj profil"),
-        children: <Widget>[
-          Text(Data2.me.firstName),
-          Text(Data2.me.lastName),
-          Text(Data2.me.phone),
-          Text(Data2.me.email),
-        ]
-      ),
+      ExpansionTile(title: Text("Můj profil"), children: <Widget>[
+        Padding(
+            padding: EdgeInsets.only(
+                left: screenWidth * 0.04,
+                right: screenWidth * 0.04,
+                bottom: screenWidth * 0.04),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text("${Data2.me.firstName} ${Data2.me.lastName}", style: ts),
+                  Text(Data2.me.phone, style: ts),
+                  Text(Data2.me.email, style: ts),
+                ]))
+      ]),
       CheckboxListTile(
           title: Text('Dostávat notifikace do aplikace'),
           subtitle: Text("V opačném případě budete dostávat SMS"),
@@ -330,19 +340,23 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Widget aboutBody() {
+    TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
     return ListView(children: <Widget>[
-      ExpansionTile(
-          title: Text("O Aplikaci"),
-          children: <Widget>[
-            Text("Vytvořeno v březnu 2020."),
-          ]
-      ),
-      ExpansionTile(
-          title: Text("Privacy Policy"),
-          children: <Widget>[
-            Text("TODO: přidat privacy policy"),
-          ]
-      ),
+      ExpansionTile(title: Text("O aplikaci"), children: <Widget>[
+        Padding(
+            padding: EdgeInsets.only(
+                left: screenWidth * 0.04,
+                right: screenWidth * 0.04,
+                bottom: screenWidth * 0.04),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text("Vytvořeno v březnu 2020.", style: ts),
+                ]))
+      ]),
+      ExpansionTile(title: Text("Privacy Policy"), children: <Widget>[
+        Text("TODO: přidat privacy policy"),
+      ]),
     ]);
   }
 
@@ -360,10 +374,10 @@ class MyHomePageState extends State<MyHomePage> {
           color: PRIMARY_COLOR,
         );
         break;
-      case SETTINGS_PAGE:
+      case PROFILE_PAGE:
         body = settingsPageBody();
         break;
-      case PRIVACY_POLICY_PAGE:
+      case ABOUT_PAGE:
         body = aboutBody();
         break;
     }
@@ -393,7 +407,7 @@ class MyHomePageState extends State<MyHomePage> {
         cardBuilder: cardBuilder,
       ),*/ //ListView(children: <Widget>[] + centerContent + []),
       bottomNavigationBar: bottomNavBar(context, currentPage, switchToPage),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: currentPage == ABOUT_PAGE ? FloatingActionButton(
         tooltip: 'Debug settings',
         backgroundColor: Colors.redAccent, //PRIMARY_COLOR,
         child: Icon(Icons.settings),
@@ -403,7 +417,7 @@ class MyHomePageState extends State<MyHomePage> {
             //setState(() {});
           });
         },
-      ),
+      ) : null,
     );
   }
 
@@ -501,21 +515,22 @@ class MyHomePageState extends State<MyHomePage> {
                   return null;
                 },
               )),
-          buttonListTile("Ověřit (TEST mám registraci)", screenWidth, () {
+          buttonListTile("Ověřit", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
               setStateWaitForToken(controllerSMS.text, true);
             }
           }),
-          buttonListTile("Ověřit (TEST nemám registraci)", screenWidth, () {
+          /*buttonListTile("Ověřit (TEST nemám registraci)", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
               setStateWaitForToken(controllerSMS.text, false);
             }
-          }),
+          }),*/
         ],
       ),
     ));
   }
 
+/*
   Widget buildWithRegistrationForm() {
     return Scaffold(
         body: getPersonalDetailsForm(
@@ -526,7 +541,7 @@ class MyHomePageState extends State<MyHomePage> {
             onProfileSaved: () {
               setStateUploadProfile();
             }));
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -540,25 +555,25 @@ class MyHomePageState extends State<MyHomePage> {
     } else {
       // Login/registration flow.
       //if (authToken == null || !registrationDone) {
-        switch (homePageState) {
-          case HomePageState.enterPhone:
-            return buildEnterPhoneNumber();
-          case HomePageState.waitForSMS:
-            return buildLoading("Odesílám požadavek o potvrzovací SMS ...");
-          case HomePageState.enterSMS:
-            return buildEnterSMS();
-          case HomePageState.waitForToken:
-            return buildLoading("Čekám na potvrzení SMS kódu ...");
-          case HomePageState.enterRegistrationDetails:
+      switch (homePageState) {
+        case HomePageState.enterPhone:
+          return buildEnterPhoneNumber();
+        case HomePageState.waitForSMS:
+          return buildLoading("Odesílám požadavek o potvrzovací SMS ...");
+        case HomePageState.enterSMS:
+          return buildEnterSMS();
+        case HomePageState.waitForToken:
+          return buildLoading("Čekám na potvrzení SMS kódu ...");
+        /*case HomePageState.enterRegistrationDetails:
             return buildWithRegistrationForm();
           case HomePageState.uploadProfile:
-            return buildLoading("Posílám registraci na server ...");
-          case HomePageState.firstFetch:
-            return buildLoading("Načítám data ...");
-          case HomePageState.ready:
-            return buildReady();
-        }
-     /* } else {
+            return buildLoading("Posílám registraci na server ...");*/
+        case HomePageState.firstFetch:
+          return buildLoading("Načítám data ...");
+        case HomePageState.ready:
+          return buildReady();
+      }
+      /* } else {
         // Normal case of being in the app.
         return buildReady();
       }*/
@@ -593,6 +608,7 @@ class MyHomePageState extends State<MyHomePage> {
                       });
                     },
                   ),
+                  /*
                   MaterialButton(
                     color: Colors.red,
                     child: Text(
@@ -649,9 +665,8 @@ class MyHomePageState extends State<MyHomePage> {
                         ),
                       );
                     },
-                  ),
+                  ),*/
                 ]),
-
             actions: <Widget>[
               new FlatButton(
                 child: new Text("GO BACK"),

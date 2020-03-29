@@ -4,12 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:pomuzemesi/task_detail_page2.dart';
 //import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-import 'data.dart';
+//import 'data.dart';
 import 'data2.dart';
 //import 'list_tasks_page.dart';
 import 'misc.dart';
 import 'model2.dart';
-import 'privacy_policy_page.dart';
+//import 'privacy_policy_page.dart';
 
 BottomNavigationBar bottomNavBar(BuildContext context, int pageId, Function(int) switchToTab) {
   return BottomNavigationBar(

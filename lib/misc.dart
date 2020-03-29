@@ -10,8 +10,8 @@ Color SECONDARY_COLOR = Color(0xffd48d22);
 // Page keys in BottomNavigationBar.
 const int HOME_PAGE = 0;
 const int TASKS_PAGE = 1;
-const int SETTINGS_PAGE = 2;
-const int PRIVACY_POLICY_PAGE = 3;
+const int PROFILE_PAGE = 2;
+const int ABOUT_PAGE = 3;
 
 // Sizes relative to screen width.
 double FONT_SIZE_NORMAL = 0.04;
