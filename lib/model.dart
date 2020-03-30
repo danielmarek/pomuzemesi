@@ -62,6 +62,7 @@ class Request {
   final String coordinatorEmail;
   final String coordinatorFirstName;
   final String coordinatorLastName;
+  final String coordinatorPhone;
   final String subscriber;
   final String subscriberPhone;
   final bool allDetailsGranted;
@@ -86,6 +87,7 @@ class Request {
       this.coordinatorEmail,
       this.coordinatorFirstName,
       this.coordinatorLastName,
+      this.coordinatorPhone,
       this.subscriber,
       this.subscriberPhone,
       this.allDetailsGranted});
@@ -134,17 +136,21 @@ class Request {
           ? r['all_details_granted']
           : null,
       // NOTE: dict in dict.
-      coordinatorEmail: (r.containsKey('coordinator') &&
+      coordinatorEmail: (r.containsKey('coordinator') && r['coordinator'] != null &&
               r['coordinator'].containsKey('email'))
           ? r['coordinator']['email']
           : null,
-      coordinatorFirstName: (r.containsKey('coordinator') &&
+      coordinatorFirstName: (r.containsKey('coordinator') && r['coordinator'] != null &&
               r['coordinator'].containsKey('first_name'))
           ? r['coordinator']['first_name']
           : null,
-      coordinatorLastName: (r.containsKey('coordinator') &&
+      coordinatorLastName: (r.containsKey('coordinator') && r['coordinator'] != null &&
               r['coordinator'].containsKey('last_name'))
           ? r['coordinator']['last_name']
+          : null,
+      coordinatorPhone: (r.containsKey('coordinator') && r['coordinator'] != null &&
+          r['coordinator'].containsKey('phone'))
+          ? r['coordinator']['phone']
           : null,
     );
   }
