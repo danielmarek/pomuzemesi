@@ -469,6 +469,7 @@ class CardBuilder {
     @required Function onReturn,
     Function onAccept,
     Function onDecline,
+    bool bland = false,
   }) {
     int requestID = request.id;
     String cityAndPart = request.formatCityAndPart();
@@ -563,12 +564,13 @@ class CardBuilder {
 
     Widget content = Column(children: actualContent);
 
+    Card result;
+
     if (isDetail) {
-      return Hero(tag: 'request_$requestID', child: Card(child: content));
+      result = Card(child: content);
     } else {
-      return Hero(
-          tag: 'request_$requestID',
-          child: Card(
+
+          result = Card(
               child: InkWell(
                   onTap: () {
                     Navigator.push(
@@ -584,8 +586,16 @@ class CardBuilder {
                       onReturn();
                     });
                   },
-                  child: content)));
+                  child: content));
     }
+    if (bland) {
+      return Hero(tag: 'request_$requestID', child: Opacity(
+          opacity: 0.35,
+          child: result));
+    } else {
+      return Hero(tag: 'request_$requestID', child: result);
+    }
+
   }
 }
 

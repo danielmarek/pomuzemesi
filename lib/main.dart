@@ -371,7 +371,7 @@ class MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  List<Widget> cardsForList(List<Request> requests) {
+  List<Widget> cardsForList(List<Request> requests, {bool bland = false}) {
     //List<Request> requests =
     //   currentPage == 0 ? Data.acceptedRequests : Data.otherRequests;
     List<Widget> l = List<Widget>();
@@ -381,6 +381,7 @@ class MyHomePageState extends State<MyHomePage> {
         request: request,
         cameFrom: HOME_PAGE,
         isDetail: false,
+        bland: bland,
         onReturn: () {
           Data.updateAllAndThen(() {
             setState(() {});
@@ -399,7 +400,7 @@ class MyHomePageState extends State<MyHomePage> {
     }
     List<Widget> l = List<Widget>();
     List<Widget> pending = cardsForList(Data.pendingRequests);
-    List<Widget> rejected = cardsForList(Data.rejectedRequests);
+    List<Widget> rejected = cardsForList(Data.rejectedRequests, bland: true);
     l.add(SizedBox(height: screenWidth * 0.02));
     if (pending.length > 0) {
       l.add(Row(

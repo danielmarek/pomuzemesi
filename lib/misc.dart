@@ -32,7 +32,7 @@ void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
 
   firebaseMessaging.configure(
     onMessage: (Map<String, dynamic> message) async {
-      print('firebase: onMessage(): $message');
+      print('firebase: onMessage(): ${message}');
     },
     onResume: (Map<String, dynamic> message) async {
       print('firebase: onResume(): $message');
