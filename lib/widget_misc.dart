@@ -278,6 +278,16 @@ class CardBuilder {
   static List<Widget> descriptionWidgets({@required Request request}) {
     // TODO also upravena
     String text = 'Poptávka vytvořena: ${request.formatCreatedAt()}.';
+
+    String desc = 'Poptávka nemá popis.';
+    if (request.shortDescription != null && request.longDescription != null) {
+      desc = "${request.shortDescription}\n\n${request.longDescription}";
+    } else if (request.shortDescription != null) {
+      desc = request.shortDescription;
+    } else if (request.longDescription != null) {
+      desc = request.longDescription;
+    }
+
     return [
           myDivider(screenWidth),
           Row(children: <Widget>[Text(text, style: tsDescSmaller)]),
@@ -286,7 +296,7 @@ class CardBuilder {
             children: <Widget>[
               Flexible(
                   child: Text(
-                "${request.shortDescription}",
+                desc,
                 style: tsDesc,
               ))
             ],

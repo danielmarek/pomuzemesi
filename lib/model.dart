@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 
 // TODO: remove fields that are not explicitly used by this app?
@@ -74,7 +75,7 @@ class Request {
       this.myState,
       this.title,
       this.shortDescription,
-        this.longDescription,
+      this.longDescription,
       this.city,
       this.cityPart,
       this.address,
@@ -105,7 +106,7 @@ class Request {
       shortDescription:
           r.containsKey('short_description') ? r['short_description'] : null,
       longDescription:
-      r.containsKey('long_description') ? r['long_description'] : null,
+          r.containsKey('long_description') ? r['long_description'] : null,
       city: r.containsKey('city') ? r['city'] : null,
       cityPart: r.containsKey('city_part') ? r['city_part'] : null,
       address: (r.containsKey('address') && r['address'] != null)
@@ -140,20 +141,24 @@ class Request {
           ? r['all_details_granted']
           : null,
       // NOTE: dict in dict.
-      coordinatorEmail: (r.containsKey('coordinator') && r['coordinator'] != null &&
+      coordinatorEmail: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
               r['coordinator'].containsKey('email'))
           ? r['coordinator']['email']
           : null,
-      coordinatorFirstName: (r.containsKey('coordinator') && r['coordinator'] != null &&
+      coordinatorFirstName: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
               r['coordinator'].containsKey('first_name'))
           ? r['coordinator']['first_name']
           : null,
-      coordinatorLastName: (r.containsKey('coordinator') && r['coordinator'] != null &&
+      coordinatorLastName: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
               r['coordinator'].containsKey('last_name'))
           ? r['coordinator']['last_name']
           : null,
-      coordinatorPhone: (r.containsKey('coordinator') && r['coordinator'] != null &&
-          r['coordinator'].containsKey('phone'))
+      coordinatorPhone: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
+              r['coordinator'].containsKey('phone'))
           ? r['coordinator']['phone']
           : null,
     );
@@ -163,6 +168,7 @@ class Request {
     List<Request> l = List<Request>();
     var parsedJson = json.decode(jsonData);
     for (int i = 0; i < parsedJson.length; i++) {
+      //debugPrint(parsedJson[i].toString());
       var r = parsedJson[i];
       l.add(Request.fromParsedJson(r));
     }
