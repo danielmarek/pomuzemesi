@@ -1,8 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pomuzemesi/task_detail_page.dart';
+
 //import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:maps_launcher/maps_launcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
 import 'misc.dart';
@@ -134,7 +139,8 @@ Widget myButton(
 Widget buttonListTile(String text, double screenWidth, Function onPressed,
     {MyButtonStyle myButtonStyle = MyButtonStyle.normal}) {
   return Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-    myButton(text, screenWidth, onPressed, style: myButtonStyle, widthFraction: 0.6)
+    myButton(text, screenWidth, onPressed,
+        style: myButtonStyle, widthFraction: 0.6)
   ]);
 }
 
@@ -320,48 +326,86 @@ class CardBuilder {
     return l;
   }
 
+  static List<Widget> contactButtons(
+      String email, String phone, String address) {
+    debugPrint("contactButtons: $email, $phone, $address");
+    if (email == null && phone == null && address == null) {
+      return <Widget>[];
+    }
+    List<Widget> l = List<Widget>();
+    if (phone != null) {
+      l.add(myButton('Volat', screenWidth, () {
+        launch("tel:$phone");
+      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+      if (l.length > 0) {
+        l.add(SizedBox(width: screenWidth * 0.02));
+      }
+      l.add(myButton('SMS', screenWidth, () {
+        launch("sms:$phone");
+      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+    }
+    if (email != null) {
+      if (l.length > 0) {
+        l.add(SizedBox(width: screenWidth * 0.02));
+      }
+      l.add(myButton('E-mail', screenWidth, () {
+        sendEmailTo(email);
+      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+    }
+    if (address != null) {
+      if (l.length > 0) {
+        l.add(SizedBox(width: screenWidth * 0.02));
+      }
+      l.add(myButton('Mapa', screenWidth, () {
+        MapsLauncher.launchQuery(address);
+      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+    }
+    return <Widget>[
+      Row(mainAxisAlignment: MainAxisAlignment.start, children: l)
+    ];
+  }
+
   static List<Widget> contactWidgets(
       {@required Request request,
       @required String title,
       String email,
       fullName,
-      phone}) {
-    debugPrint("contactWidgets: $email, $fullName, $phone");
+      phone,
+      address}) {
+    debugPrint("contactWidgets: $email, $fullName, $phone, $address");
 
     List<Widget> l = List<Widget>();
 
-    if (fullName != null || email != null || phone != null) {
-      List<Widget> coordinatorItems = List<Widget>();
+    if (fullName != null || email != null || phone != null || address != null) {
+      List<Widget> contactItems = List<Widget>();
       if (fullName != null) {
-        coordinatorItems.add(Text(fullName));
+        contactItems.add(Text(fullName));
       }
       if (email != null) {
-        coordinatorItems.add(Text(email));
+        contactItems.add(Text(email));
       }
       if (phone != null) {
-        coordinatorItems.add(Text(phone));
+        contactItems.add(Text(phone));
+      }
+      if (address != null) {
+        contactItems.add(Text(address));
       }
 
       l.addAll(<Widget>[
-        myDivider(screenWidth),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Text(title.toUpperCase(), style: tsCardTop),
-          ],
-        ),
-        ListTile(
-            title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: coordinatorItems)),
-      ] + (email == null ? [] : <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[myButton('email', screenWidth, (){
-            sendEmailTo(email);
-          }, style: MyButtonStyle.blue, widthFraction: 0.3)]
-        ),
-      ]));
+            myDivider(screenWidth),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                Text(title.toUpperCase(), style: tsCardTop),
+              ],
+            ),
+            SizedBox(height: screenWidth * 0.03),
+            ListTile(
+                title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: contactItems)),
+          ] +
+          contactButtons(email, phone, address));
     }
     return l;
   }
@@ -393,8 +437,8 @@ class CardBuilder {
 
     List<Widget> l = List<Widget>();
     l.addAll([
-        myDivider(screenWidth),
-        //SizedBox(height: screenWidth * 0.05,)
+      myDivider(screenWidth),
+      //SizedBox(height: screenWidth * 0.05,)
     ]);
     l.add(Row(mainAxisAlignment: MainAxisAlignment.end, children: widgets));
     return l;
@@ -453,6 +497,7 @@ class CardBuilder {
             title: 'Odběratel',
             fullName: request.subscriber,
             phone: request.subscriberPhone,
+            address: request.getAddress(),
           ) +
           respondButtons(
             request: request,
@@ -472,7 +517,7 @@ class CardBuilder {
       actualContent.add(
           Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
         SizedBox(
-            height: screenWidth * 0.2,
+            height: screenWidth * 0.15,
             width: screenWidth * 0.13,
             child: InkWell(
               child: Icon(

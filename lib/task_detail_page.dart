@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:maps_launcher/maps_launcher.dart';
 
 import 'data.dart';
 import 'model.dart';
@@ -8,12 +7,12 @@ import 'misc.dart';
 import 'rest_client.dart';
 import 'widget_misc.dart';
 
-
 class DetailPage extends StatefulWidget {
   DetailPage({Key key, this.title, this.request, @required this.cameFrom})
       : super(key: key);
 
   final String title;
+
   //final Task task;
   final int cameFrom;
   final Request request;
@@ -42,14 +41,16 @@ class _DetailPageState extends State<DetailPage> {
     CardBuilder.setScreenWidth(screenWidth);
     return Scaffold(
       //appBar: AppBar(title: Text(Data2.requests[widget.requestID].shortDescription),),
-      body: CardBuilder.buildCard(
+      body: ListView(children: <Widget>[
+        CardBuilder.buildCard(
           context: context,
           request: widget.request,
           cameFrom: widget.cameFrom,
           isDetail: true,
           onAccept: acceptTask,
           onDecline: declineTask,
-      ),
+        )
+      ]),
       /*bottomNavigationBar: bottomNavBar(context, widget.cameFrom),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Help',
