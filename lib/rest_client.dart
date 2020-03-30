@@ -9,6 +9,7 @@ import 'model.dart';
 class APICallException implements Exception {
   final String cause;
   final int errorCode;
+
   APICallException(this.errorCode, this.cause);
 
   String errorMessage() {
@@ -17,7 +18,6 @@ class APICallException implements Exception {
 }
 
 class RestClient {
-
   static String BASE_URL = "https://pomuzeme-si-mobile-api.herokuapp.com/";
   static String token;
   static http.Client httpClient = new http.Client();
@@ -33,7 +33,8 @@ class RestClient {
     debugPrint("response body:\n${response.body}");
   }*/
 
-  static Future<bool> sessionNew(String phone, String reCaptcha, String fcmToken) async {
+  static Future<bool> sessionNew(
+      String phone, String reCaptcha, String fcmToken) async {
     String url = BASE_URL +
         'api/v1/session/new?phone_number=$phone&recaptcha_token=$reCaptcha&fcm_token=$fcmToken';
     debugPrint("calling $url ...");
@@ -65,7 +66,7 @@ class RestClient {
   }
 
   static Future<VolunteerPreferences> getVolunteerPreferences() async {
-    String url = BASE_URL + '/api/v1/volunteer/preferences';
+    String url = BASE_URL + 'api/v1/volunteer/preferences';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
       url,
@@ -82,7 +83,7 @@ class RestClient {
   }
 
   static Future<Volunteer> getVolunteerProfile() async {
-    String url = BASE_URL + '/api/v1/volunteer/profile';
+    String url = BASE_URL + 'api/v1/volunteer/profile';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
       url,
@@ -100,7 +101,8 @@ class RestClient {
 
   static Future<bool> setNotificationsToApp(bool sendNotificationsToApp) async {
     String value = sendNotificationsToApp ? 'true' : 'false';
-    String url = BASE_URL + '/api/v1/volunteer/preferences?notifications_to_app=$value';
+    String url =
+        BASE_URL + 'api/v1/volunteer/preferences?notifications_to_app=$value';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.put(
       url,
@@ -117,7 +119,7 @@ class RestClient {
   }
 
   static Future<List<Request>> getVolunteerRequests() async {
-    String url = BASE_URL + '/api/v1/volunteer/requests';
+    String url = BASE_URL + 'api/v1/volunteer/requests';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
       url,
@@ -138,7 +140,8 @@ class RestClient {
 
   static Future<bool> respondToRequest(int id, bool accept) async {
     String acceptStr = accept ? 'true' : 'false';
-    String url = BASE_URL + '/api/v1/volunteer/requests/$id/respond?accept=$acceptStr';
+    String url =
+        BASE_URL + 'api/v1/volunteer/requests/$id/respond?accept=$acceptStr';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.post(
       url,
@@ -150,6 +153,40 @@ class RestClient {
 
     if (response.statusCode == 200) {
       return true;
+    } else {
+      throw APICallException(response.statusCode, response.body);
+    }
+  }
+
+  static Future<List<Organisation>> getMyOrganisations() async {
+    String url = BASE_URL + 'api/v1/volunteer/organisations';
+    debugPrint("calling $url ...");
+    http.Response response = await httpClient.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    debugPrint("response code: ${response.statusCode}");
+    debugPrint("response headers:\n${response.headers}");
+    debugPrint("response body:\n${response.body}");
+    if (response.statusCode == 200) {
+      return Organisation.listFromRawJson(response.body);
+    } else {
+      throw APICallException(response.statusCode, response.body);
+    }
+  }
+
+  static Future<List<Organisation>> getAllOrganisations() async {
+    String url = BASE_URL + 'api/v1/organisations';
+    debugPrint("calling $url ...");
+    http.Response response = await httpClient.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    debugPrint("response code: ${response.statusCode}");
+    debugPrint("response headers:\n${response.headers}");
+    debugPrint("response body:\n${response.body}");
+    if (response.statusCode == 200) {
+      return Organisation.listFromRawJson(response.body);
     } else {
       throw APICallException(response.statusCode, response.body);
     }

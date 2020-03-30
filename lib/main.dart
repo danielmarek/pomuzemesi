@@ -371,9 +371,9 @@ class MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  ListView cards() {
-    List<Request> requests =
-        currentPage == 0 ? Data.myRequests : Data.otherRequests;
+  List<Widget> cardsForList(List<Request> requests) {
+    //List<Request> requests =
+    //   currentPage == 0 ? Data.acceptedRequests : Data.otherRequests;
     List<Widget> l = List<Widget>();
     for (Request request in requests) {
       l.add(CardBuilder.buildCard(
@@ -388,6 +388,46 @@ class MyHomePageState extends State<MyHomePage> {
         },
       ));
     }
+    return l;
+  }
+
+  ListView cards() {
+    if (currentPage == HOME_PAGE) {
+      return ListView(
+        children: cardsForList(Data.acceptedRequests),
+      );
+    }
+    List<Widget> l = List<Widget>();
+    List<Widget> pending = cardsForList(Data.pendingRequests);
+    List<Widget> rejected = cardsForList(Data.rejectedRequests);
+    l.add(SizedBox(height: screenWidth * 0.02));
+    if (pending.length > 0) {
+      l.add(Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(screenWidth * 0.02),
+            child: Text("Čekají na rozhodnutí".toUpperCase(),
+                style: CardBuilder.tsCardTop),
+          )
+        ],
+      ));
+      l.addAll(pending);
+    }
+    if (rejected.length > 0) {
+      l.add(Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(screenWidth * 0.02),
+            child:
+                Text("Odmítnuté".toUpperCase(), style: CardBuilder.tsCardTop),
+          )
+        ],
+      ));
+      l.addAll(rejected);
+    }
+
     return ListView(
       children: l,
     );
@@ -412,8 +452,7 @@ class MyHomePageState extends State<MyHomePage> {
           value: Data.preferences.notificationsToApp,
           onChanged: (val) {
             Data.toggleNotifications().then((_) {
-              setState(() {
-              });
+              setState(() {});
             });
           }),
     ]);
@@ -468,7 +507,7 @@ class MyHomePageState extends State<MyHomePage> {
       case HOME_PAGE:
       case TASKS_PAGE:
         body = LiquidPullToRefresh(
-          child: (Data.myRequests.length == 0 && currentPage == HOME_PAGE)
+          child: (Data.acceptedRequests.length == 0 && currentPage == HOME_PAGE)
               ? noTasks()
               : cards(),
           onRefresh: _onRefresh,

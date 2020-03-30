@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
+
 import 'model.dart';
 import 'rest_client.dart';
 
 class Data {
-  static List<Request> allRequests, myRequests, otherRequests;
+  static List<Request> allRequests, acceptedRequests, rejectedRequests, pendingRequests;
   static Volunteer me;
   static VolunteerPreferences preferences;
 
@@ -34,20 +36,27 @@ class Data {
   }
 
   static Future<bool> updateRequests() async {
+    // States: accepted, rejected, pending_notification
+
     List<Request> all = await RestClient.getVolunteerRequests();
-    List<Request> my = List<Request>();
-    List<Request> other = List<Request>();
+    List<Request> accepted = List<Request>();
+    List<Request> rejected = List<Request>();
+    List<Request> pending = List<Request>();
     for (Request r in all){
+      //debugPrint('myState: ${r.myState}');
       if (r.myState == 'accepted') {
-        my.add(r);
+        accepted.add(r);
+      } else if (r.myState == 'rejected') {
+        rejected.add(r);
       } else {
-        other.add(r);
+        pending.add(r);
       }
     }
 
     allRequests = all;
-    myRequests = my;
-    otherRequests = other;
+    acceptedRequests = accepted;
+    pendingRequests = pending;
+    rejectedRequests = rejected;
 
     if (_onRequestsUpdate != null) {
       _onRequestsUpdate();

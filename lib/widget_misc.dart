@@ -54,7 +54,7 @@ BottomNavigationBarItem bottomNAvBarItemWithBadge({
 
 BottomNavigationBar bottomNavBar(BuildContext context, int pageId,
     double screenWidth, Function(int) switchToTab) {
-  int otherRequestCount = Data.otherRequests.length;
+  int otherRequestCount = Data.pendingRequests.length;
   //otherRequestCount = 0;
   return BottomNavigationBar(
     type: BottomNavigationBarType.fixed,
@@ -243,7 +243,7 @@ Widget myDivider(double screenWidth) {
 
 class CardBuilder {
   static double screenWidth;
-  static TextStyle tsCardTop, tsTitle, tsDesc, tsDescSmaller;
+  static TextStyle tsCardTop, tsCardTopBrown, tsTitle, tsDesc, tsDescSmaller;
 
   static void setScreenWidth(double width) {
     screenWidth = width;
@@ -251,6 +251,12 @@ class CardBuilder {
     // TODO relative font spacing size
     tsCardTop = TextStyle(
       color: Color.fromARGB(154, 0, 0, 0),
+      letterSpacing: 1.5,
+      fontSize: tenpx,
+      fontWeight: FontWeight.w500,
+    );
+    tsCardTopBrown = TextStyle(
+      color: SECONDARY_COLOR2,
       letterSpacing: 1.5,
       fontSize: tenpx,
       fontWeight: FontWeight.w500,
@@ -278,6 +284,16 @@ class CardBuilder {
   static List<Widget> descriptionWidgets({@required Request request}) {
     // TODO also upravena
     String text = 'Poptávka vytvořena: ${request.formatCreatedAt()}.';
+
+    String desc = 'Poptávka nemá popis.';
+    if (request.shortDescription != null && request.longDescription != null) {
+      desc = "${request.shortDescription}\n\n${request.longDescription}";
+    } else if (request.shortDescription != null) {
+      desc = request.shortDescription;
+    } else if (request.longDescription != null) {
+      desc = request.longDescription;
+    }
+
     return [
           myDivider(screenWidth),
           Row(children: <Widget>[Text(text, style: tsDescSmaller)]),
@@ -286,7 +302,7 @@ class CardBuilder {
             children: <Widget>[
               Flexible(
                   child: Text(
-                "${request.shortDescription}",
+                desc,
                 style: tsDesc,
               ))
             ],
@@ -368,6 +384,7 @@ class CardBuilder {
   static List<Widget> contactWidgets(
       {@required Request request,
       @required String title,
+      @required TextStyle topTextStyle,
       String email,
       fullName,
       phone,
@@ -396,7 +413,7 @@ class CardBuilder {
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                Text(title.toUpperCase(), style: tsCardTop),
+                Text(title.toUpperCase(), style: topTextStyle),
               ],
             ),
             SizedBox(height: screenWidth * 0.03),
@@ -490,6 +507,7 @@ class CardBuilder {
             email: request.coordinatorEmail,
             fullName: request.formatCoordinatorFullName(),
             phone: request.coordinatorPhone,
+            topTextStyle: tsCardTop,
           ) +
           contactWidgets(
             request: request,
@@ -497,6 +515,7 @@ class CardBuilder {
             fullName: request.subscriber,
             phone: request.subscriberPhone,
             address: request.getAddress(),
+            topTextStyle: tsCardTopBrown,
           ) +
           respondButtons(
             request: request,

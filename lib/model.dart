@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 
 // TODO: remove fields that are not explicitly used by this app?
@@ -48,6 +49,7 @@ class Request {
 
   final String title;
   final String shortDescription;
+  final String longDescription;
 
   final String city;
   final String cityPart;
@@ -73,6 +75,7 @@ class Request {
       this.myState,
       this.title,
       this.shortDescription,
+      this.longDescription,
       this.city,
       this.cityPart,
       this.address,
@@ -102,6 +105,8 @@ class Request {
       title: r.containsKey('title') ? r['title'] : null,
       shortDescription:
           r.containsKey('short_description') ? r['short_description'] : null,
+      longDescription:
+          r.containsKey('long_description') ? r['long_description'] : null,
       city: r.containsKey('city') ? r['city'] : null,
       cityPart: r.containsKey('city_part') ? r['city_part'] : null,
       address: (r.containsKey('address') && r['address'] != null)
@@ -136,20 +141,24 @@ class Request {
           ? r['all_details_granted']
           : null,
       // NOTE: dict in dict.
-      coordinatorEmail: (r.containsKey('coordinator') && r['coordinator'] != null &&
+      coordinatorEmail: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
               r['coordinator'].containsKey('email'))
           ? r['coordinator']['email']
           : null,
-      coordinatorFirstName: (r.containsKey('coordinator') && r['coordinator'] != null &&
+      coordinatorFirstName: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
               r['coordinator'].containsKey('first_name'))
           ? r['coordinator']['first_name']
           : null,
-      coordinatorLastName: (r.containsKey('coordinator') && r['coordinator'] != null &&
+      coordinatorLastName: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
               r['coordinator'].containsKey('last_name'))
           ? r['coordinator']['last_name']
           : null,
-      coordinatorPhone: (r.containsKey('coordinator') && r['coordinator'] != null &&
-          r['coordinator'].containsKey('phone'))
+      coordinatorPhone: (r.containsKey('coordinator') &&
+              r['coordinator'] != null &&
+              r['coordinator'].containsKey('phone'))
           ? r['coordinator']['phone']
           : null,
     );
@@ -159,6 +168,7 @@ class Request {
     List<Request> l = List<Request>();
     var parsedJson = json.decode(jsonData);
     for (int i = 0; i < parsedJson.length; i++) {
+      //debugPrint(parsedJson[i].toString());
       var r = parsedJson[i];
       l.add(Request.fromParsedJson(r));
     }
@@ -374,5 +384,63 @@ class VolunteerPreferences {
           ? v['notifications_to_app']
           : null,
     );
+  }
+}
+
+/*
+{
+  "id":1,
+  "name":"test",
+  "abbreviation":"TEST",
+  "business_id_number":"",
+  "contact_person":"ette",
+  "contact_person_phone":"+420111222333",
+  "contact_person_email":"test@test.cc"
+  }
+*/
+
+class Organisation {
+  final int id;
+  final String name, abbreviation;
+  final String businessIdNumber;
+  final String contactName, contactPhone, contactEmail;
+
+  Organisation(
+      {this.id,
+      this.name,
+      this.abbreviation,
+      this.businessIdNumber,
+      this.contactName,
+      this.contactPhone,
+      this.contactEmail});
+
+  //static Organisation fromParsedJson
+
+  static Organisation fromParsedJson(var r) {
+    return Organisation(
+      id: r.containsKey('id') ? r['id'] : null,
+      name: r.containsKey('name') ? r['name'] : null,
+      abbreviation: r.containsKey('abbreviation') ? r['abbreviation'] : null,
+      businessIdNumber:
+          r.containsKey('business_id_number') ? r['business_id_number'] : null,
+      contactName: r.containsKey('contact_person') ? r['contact_person'] : null,
+      contactPhone: r.containsKey('contact_person_phone')
+          ? r['contact_person_phone']
+          : null,
+      contactEmail: r.containsKey('contact_person_email')
+          ? r['contact_person_email']
+          : null,
+    );
+  }
+
+  static List<Organisation> listFromRawJson(String jsonData) {
+    List<Organisation> l = List<Organisation>();
+    var parsedJson = json.decode(jsonData);
+    for (int i = 0; i < parsedJson.length; i++) {
+      //debugPrint(parsedJson[i].toString());
+      var r = parsedJson[i];
+      l.add(Organisation.fromParsedJson(r));
+    }
+    return l;
   }
 }
