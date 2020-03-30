@@ -54,7 +54,7 @@ BottomNavigationBarItem bottomNAvBarItemWithBadge({
 
 BottomNavigationBar bottomNavBar(BuildContext context, int pageId,
     double screenWidth, Function(int) switchToTab) {
-  int otherRequestCount = Data.otherRequests.length;
+  int otherRequestCount = Data.pendingRequests.length;
   //otherRequestCount = 0;
   return BottomNavigationBar(
     type: BottomNavigationBarType.fixed,
