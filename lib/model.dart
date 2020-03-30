@@ -48,6 +48,7 @@ class Request {
 
   final String title;
   final String shortDescription;
+  final String longDescription;
 
   final String city;
   final String cityPart;
@@ -73,6 +74,7 @@ class Request {
       this.myState,
       this.title,
       this.shortDescription,
+        this.longDescription,
       this.city,
       this.cityPart,
       this.address,
@@ -102,6 +104,8 @@ class Request {
       title: r.containsKey('title') ? r['title'] : null,
       shortDescription:
           r.containsKey('short_description') ? r['short_description'] : null,
+      longDescription:
+      r.containsKey('long_description') ? r['long_description'] : null,
       city: r.containsKey('city') ? r['city'] : null,
       cityPart: r.containsKey('city_part') ? r['city_part'] : null,
       address: (r.containsKey('address') && r['address'] != null)
