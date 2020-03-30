@@ -489,8 +489,7 @@ class CardBuilder {
             title: 'Koordinátor',
             email: request.coordinatorEmail,
             fullName: request.formatCoordinatorFullName(),
-            // FIXME: coordinator should have a phone, when this is fixed on the backend.
-            phone: null,
+            phone: request.coordinatorPhone,
           ) +
           contactWidgets(
             request: request,
