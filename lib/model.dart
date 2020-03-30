@@ -46,11 +46,12 @@ class Request {
   // My own state as a volunteer in relation to the request.
   final String myState;
 
+  final String title;
   final String shortDescription;
 
   final String city;
   final String cityPart;
-  final String address;
+  final Address address;
 
   final int organisationID;
   final DateTime fulfillmentDate;
@@ -69,6 +70,7 @@ class Request {
       {this.id,
       this.state,
       this.myState,
+      this.title,
       this.shortDescription,
       this.city,
       this.cityPart,
@@ -95,11 +97,14 @@ class Request {
       myState: r.containsKey('requested_volunteer_state')
           ? r['requested_volunteer_state']
           : null,
+      title: r.containsKey('title') ? r['title'] : null,
       shortDescription:
           r.containsKey('short_description') ? r['short_description'] : null,
       city: r.containsKey('city') ? r['city'] : null,
       cityPart: r.containsKey('city_part') ? r['city_part'] : null,
-      address: r.containsKey('address') ? r['address'] : null,
+      address: (r.containsKey('address') && r['address'] != null)
+          ? Address.fromParsedJson(r['address'])
+          : null,
       organisationID:
           r.containsKey('organisation_id') ? r['organisation_id'] : null,
       // NOTE: typo on the backend.
@@ -114,11 +119,12 @@ class Request {
       acceptedVolunteerCount: r.containsKey('accepted_volunteer_count')
           ? r['accepted_volunteer_count']
           : null,
-      createdAt: r.containsKey('created_at') ? (r['created_at'] != null
-          ? DateTime.parse(r['created_at'])
-          : null) : null,
-      updatedAt: r.containsKey('updated_at') ? (r['updated_at'] != null
-          ? DateTime.parse(r['updated_at']) : null) : null,
+      createdAt: r.containsKey('created_at')
+          ? (r['created_at'] != null ? DateTime.parse(r['created_at']) : null)
+          : null,
+      updatedAt: r.containsKey('updated_at')
+          ? (r['updated_at'] != null ? DateTime.parse(r['updated_at']) : null)
+          : null,
       closedState: r.containsKey('closed_state') ? r['closed_state'] : null,
       closedNote: r.containsKey('closed_note') ? r['closed_note'] : null,
       subscriber: r.containsKey('subscriber') ? r['subscriber'] : null,
@@ -154,8 +160,8 @@ class Request {
   }
 
   String formatCityAndPart({bool upper = true}) {
-    String c = this.city;
-    String p = this.cityPart;
+    String c = city;
+    String p = cityPart;
     if (c == null && p == null) {
       return upper ? 'Neurčené místo'.toUpperCase() : 'Neurčené místo';
     }
@@ -172,30 +178,33 @@ class Request {
   }
 
   String formatFulfillmentDate({bool upper = true}) {
-    if (this.fulfillmentDate != null) {
+    if (fulfillmentDate != null) {
       var dateFormatter = new DateFormat('dd. MM. kk:mm');
-      return dateFormatter.format(this.fulfillmentDate.toLocal());
+      return dateFormatter.format(fulfillmentDate.toLocal());
     } else {
       return upper ? 'Neurčený čas'.toUpperCase() : 'Neurčený čas';
     }
   }
 
   String formatCreatedAt() {
-    if (this.createdAt != null) {
+    if (createdAt != null) {
       var dateFormatter = new DateFormat('dd. MM. kk:mm');
-      return dateFormatter.format(this.createdAt.toLocal());
+      return dateFormatter.format(createdAt.toLocal());
     } else {
       return 'neznámo';
     }
   }
 
   String formatTitle() {
+    if (title != null) {
+      return title;
+    }
     String r = 'Popis není vyplněn';
-    if (this.shortDescription != null) {
-      if (this.shortDescription.length > 25) {
-        r = this.shortDescription.substring(0, 25) + ' ...';
+    if (shortDescription != null) {
+      if (shortDescription.length > 25) {
+        r = shortDescription.substring(0, 25) + ' ...';
       } else {
-        r = this.shortDescription;
+        r = shortDescription;
       }
     }
     return r;
@@ -209,6 +218,13 @@ class Request {
       return null;
     }
     return <String>[first, last].join(' ');
+  }
+
+  String getAddress() {
+    if (address == null) {
+      return null;
+    }
+    return address.asString();
   }
 }
 
@@ -283,6 +299,22 @@ class Address {
       createdAt: a.containsKey('created_at') ? a['created_at'] : null,
       updatedAt: a.containsKey('updated_at') ? a['updated_at'] : null,
     );
+  }
+
+  String asString() {
+    List<String> parts = List<String>();
+    if (street != null) {
+      if (streetNumber != null) {
+        parts.add('$street $streetNumber');
+      }
+    }
+    if (city != null) {
+      parts.add(city);
+    }
+    if (cityPart != null && cityPart != city) {
+      parts.add(cityPart);
+    }
+    return parts.join(', ');
   }
 }
 
