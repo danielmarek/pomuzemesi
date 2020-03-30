@@ -386,3 +386,61 @@ class VolunteerPreferences {
     );
   }
 }
+
+/*
+{
+  "id":1,
+  "name":"test",
+  "abbreviation":"TEST",
+  "business_id_number":"",
+  "contact_person":"ette",
+  "contact_person_phone":"+420111222333",
+  "contact_person_email":"test@test.cc"
+  }
+*/
+
+class Organisation {
+  final int id;
+  final String name, abbreviation;
+  final String businessIdNumber;
+  final String contactName, contactPhone, contactEmail;
+
+  Organisation(
+      {this.id,
+      this.name,
+      this.abbreviation,
+      this.businessIdNumber,
+      this.contactName,
+      this.contactPhone,
+      this.contactEmail});
+
+  //static Organisation fromParsedJson
+
+  static Organisation fromParsedJson(var r) {
+    return Organisation(
+      id: r.containsKey('id') ? r['id'] : null,
+      name: r.containsKey('name') ? r['name'] : null,
+      abbreviation: r.containsKey('abbreviation') ? r['abbreviation'] : null,
+      businessIdNumber:
+          r.containsKey('business_id_number') ? r['business_id_number'] : null,
+      contactName: r.containsKey('contact_person') ? r['contact_person'] : null,
+      contactPhone: r.containsKey('contact_person_phone')
+          ? r['contact_person_phone']
+          : null,
+      contactEmail: r.containsKey('contact_person_email')
+          ? r['contact_person_email']
+          : null,
+    );
+  }
+
+  static List<Organisation> listFromRawJson(String jsonData) {
+    List<Organisation> l = List<Organisation>();
+    var parsedJson = json.decode(jsonData);
+    for (int i = 0; i < parsedJson.length; i++) {
+      //debugPrint(parsedJson[i].toString());
+      var r = parsedJson[i];
+      l.add(Organisation.fromParsedJson(r));
+    }
+    return l;
+  }
+}
