@@ -9,6 +9,7 @@ String FEEDBACK_MAILBOX = 'test@example.com';
 Color PRIMARY_COLOR = Color(0xff6ecee1);
 Color PRIMARY_COLOR2 = Color(0xff52bbd2);
 Color SECONDARY_COLOR = Color(0xffd48d22);
+Color SECONDARY_COLOR2 = Color(0xffcf832d);
 
 // Page keys in BottomNavigationBar.
 const int HOME_PAGE = 0;
