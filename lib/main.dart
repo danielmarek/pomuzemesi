@@ -108,9 +108,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    setState(() {
-      _appLifecycleState = state;
-    });
+    _appLifecycleState = state;
   }
 
   @override
@@ -141,17 +139,21 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     return true;
   }*/
 
+  static bool isInForeground(AppLifecycleState state) {
+    return (state == null ||
+        state.index == null ||
+        state.index == 0);
+  }
+
   void startPollingTimer() {
-    pollingTimer = Timer.periodic(Duration(seconds: 5), (t) {
-      bool inForeground = false;
-      if (_appLifecycleState == null ||
-          _appLifecycleState.index == null ||
-          _appLifecycleState.index == 0) {
-        inForeground = true;
+    pollingTimer = Timer.periodic(Duration(seconds: 2), (t) {
+      bool inForeground = isInForeground(_appLifecycleState);
+      debugPrint("Timer tick, inForeground: $inForeground");
+      if (inForeground) {
+        Data.maybePoll(() {
+          setState(() {});
+        });
       }
-      Data.maybePoll(inForeground, () {
-        setState(() {});
-      });
     });
   }
 

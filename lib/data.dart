@@ -101,12 +101,8 @@ class Data {
     }
   }
 
-  static void maybePoll(bool inForeground, Function fn) {
-    debugPrint("maybePoll, inForeground: $inForeground");
-    int STALENESS_LIMIT = 3600 * 1000;
-    if (inForeground) {
-      STALENESS_LIMIT = 10 * 1000;
-    }
+  static void maybePoll(Function fn) {
+    int STALENESS_LIMIT = 10 * 1000;
     int now = millisNow();
     if (now - preferencesTs > STALENESS_LIMIT || now - requestsTs > STALENESS_LIMIT || now - profileTs > STALENESS_LIMIT) {
       debugPrint('Polling ...');
