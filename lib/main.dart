@@ -446,20 +446,23 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     List<Widget> pending = cardsForList(Data.pendingRequests);
     List<Widget> rejected = cardsForList(Data.rejectedRequests, bland: true);
     l.add(SizedBox(height: screenWidth * 0.02));
+
+    l.add(Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.all(screenWidth * 0.02),
+          child: Text("Čekají na rozhodnutí".toUpperCase(),
+              style: CardBuilder.tsCardTop),
+        )
+      ],
+    ));
+
     if (pending.length > 0) {
-      l.add(Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(screenWidth * 0.02),
-            child: Text("Čekají na rozhodnutí".toUpperCase(),
-                style: CardBuilder.tsCardTop),
-          )
-        ],
-      ));
       l.addAll(pending);
     } else {
       l.addAll(noTasks('Nemáte žádné poptávky čekající na Vaše rozhodnutí.'));
+      l.add(SizedBox(height: screenWidth * 0.15));
     }
     if (rejected.length > 0) {
       l.add(Row(
@@ -543,7 +546,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   List<Widget> noTasks(String msg) {
     return <Widget>[
       imgBlock('undraw_no_data'),
-      ListTile(title: Center(child: Text(msg))),
+      ListTile(title: Center(child: Text(
+          msg,
+          style: TextStyle(
+            color: Color.fromRGBO(0, 0, 0, 0.6),
+            fontSize: screenWidth * 0.035,
+          ),
+      ))),
     ];
   }
 
