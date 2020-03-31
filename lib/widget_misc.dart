@@ -332,7 +332,7 @@ class CardBuilder {
       } else if (vols > 1) {
         text = 'Hledáme $vols dobrovolníky.';
       } else {
-        'Hledáme 1 dobrovolníka.';
+        text = 'Hledáme 1 dobrovolníka.';
       }
       l.addAll(<Widget>[
         myDivider(screenWidth),

@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'data.dart';
+import 'dart:io';
+
 import 'model.dart';
-import 'misc.dart';
 import 'rest_client.dart';
 import 'widget_misc.dart';
 
@@ -24,15 +24,42 @@ class DetailPage extends StatefulWidget {
 class _DetailPageState extends State<DetailPage> {
   double screenWidth;
 
-  void acceptTask() async {
+  Future<String> respondToTask(bool accept) async {
     // TODO HTTP 409: REQUEST_CAPACITY_EXCEEDED
-    await RestClient.respondToRequest(widget.request.id, true);
-    Navigator.of(context).pop();
+    String err;
+    try {
+      await RestClient.respondToRequest(widget.request.id, accept);
+    } on APICallException catch (e) {
+      // Unauthorized resource.
+      if (e.errorCode == 409) {
+        err = 'Tento úkol je již plně obsazen.';
+      } else {
+        err = 'Změnu stavu se nepodařilo odeslat.';
+      }
+    } on SocketException catch (_) {
+      err = 'K serveru se nepodařilo připojit. Nejste offline?';
+    } catch (e) {
+      err = 'Chyba při odesílání požadavku';
+    }
+    return err;
+  }
+
+  void acceptTask() async {
+    String err = await respondToTask(true);
+    if (err == null) {
+      Navigator.of(context).pop();
+    } else {
+      showDialogWithText(context, err, (){});
+    }
   }
 
   void declineTask() async {
-    await RestClient.respondToRequest(widget.request.id, false);
-    Navigator.of(context).pop();
+    String err = await respondToTask(false);
+    if (err == null) {
+      Navigator.of(context).pop();
+    } else {
+      showDialogWithText(context, err, (){});
+    }
   }
 
   @override
@@ -40,7 +67,6 @@ class _DetailPageState extends State<DetailPage> {
     screenWidth = MediaQuery.of(context).size.width;
     CardBuilder.setScreenWidth(screenWidth);
     return Scaffold(
-      //appBar: AppBar(title: Text(Data2.requests[widget.requestID].shortDescription),),
       body: ListView(children: <Widget>[
         CardBuilder.buildCard(
           context: context,
@@ -51,11 +77,6 @@ class _DetailPageState extends State<DetailPage> {
           onDecline: declineTask,
         )
       ]),
-      /*bottomNavigationBar: bottomNavBar(context, widget.cameFrom),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Help',
-        child: Icon(Icons.help),
-      ),*/
     );
   }
 }

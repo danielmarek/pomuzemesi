@@ -65,7 +65,7 @@ class RestClient {
     }
   }
 
-  static Future<VolunteerPreferences> getVolunteerPreferences() async {
+  static Future<String> getVolunteerPreferences() async {
     String url = BASE_URL + 'api/v1/volunteer/preferences';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
@@ -76,13 +76,13 @@ class RestClient {
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
     if (response.statusCode == 200) {
-      return VolunteerPreferences.fromRawJson(response.body);
+      return response.body;
     } else {
       throw APICallException(response.statusCode, response.body);
     }
   }
 
-  static Future<Volunteer> getVolunteerProfile() async {
+  static Future<String> getVolunteerProfile() async {
     String url = BASE_URL + 'api/v1/volunteer/profile';
     debugPrint("calling $url ...");
     http.Response response = await httpClient.get(
@@ -93,7 +93,7 @@ class RestClient {
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
     if (response.statusCode == 200) {
-      return Volunteer.fromRawJson(response.body);
+      return response.body;
     } else {
       throw APICallException(response.statusCode, response.body);
     }
@@ -118,9 +118,15 @@ class RestClient {
     }
   }
 
-  static Future<List<Request>> getVolunteerRequests() async {
+  static Future<String> getVolunteerRequests() async {
     String url = BASE_URL + 'api/v1/volunteer/requests';
     debugPrint("calling $url ...");
+
+    // FIXME
+    /*
+    E/flutter (13827): [ERROR:flutter/lib/ui/ui_dart_state.cc(157)] Unhandled Exception: Connection closed before full header was received
+     */
+
     http.Response response = await httpClient.get(
       url,
       headers: {'Authorization': 'Bearer $token'},
@@ -131,8 +137,7 @@ class RestClient {
     debugPrint("response body:\n${response.body}");
 
     if (response.statusCode == 200) {
-      List<Request> requests = Request.listFromRawJson(response.body);
-      return requests;
+      return response.body;
     } else {
       throw APICallException(response.statusCode, response.body);
     }

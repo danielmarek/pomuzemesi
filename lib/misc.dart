@@ -23,6 +23,10 @@ double FONT_SIZE_SMALLER = 0.03;
 double LEFT_OF_BUTTON = 0.1;
 double LEFT_OF_TEXT_BLOCK = 0.04;
 
+int millisNow() {
+  return DateTime.now().toUtc().millisecondsSinceEpoch;
+}
+
 void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
   if (Platform.isIOS) iosPermission(firebaseMessaging);
 
@@ -32,7 +36,7 @@ void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
 
   firebaseMessaging.configure(
     onMessage: (Map<String, dynamic> message) async {
-      print('firebase: onMessage(): ${message}');
+      print('firebase: onMessage(): $message');
     },
     onResume: (Map<String, dynamic> message) async {
       print('firebase: onResume(): $message');

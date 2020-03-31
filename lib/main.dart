@@ -3,29 +3,16 @@ import 'package:firebase_analytics/observer.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:loading_animations/loading_animations.dart';
 
-//import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
-
-// FIXME DEBUG
-//import 'api_page.dart';
-//import 'a_webview_page.dart';
-//import 'captcha_page.dart';
-
-import 'dart:io';
 import 'dart:async';
-//import 'dart:ui' as ui;
 
 import 'data.dart';
-import 'model.dart';
-
-//import 'task_detail_page.dart';
 import 'misc.dart';
-
-//import 'personal_details_form.dart';
+import 'model.dart';
 import 'rest_client.dart';
 import 'shared_prefs.dart';
 import 'widget_misc.dart';
@@ -94,7 +81,7 @@ class MyHomePage extends StatefulWidget {
   MyHomePageState createState() => MyHomePageState();
 }
 
-class MyHomePageState extends State<MyHomePage> {
+class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   FirebaseMessaging firebaseMessaging = FirebaseMessaging();
   double screenWidth;
 
@@ -115,15 +102,28 @@ class MyHomePageState extends State<MyHomePage> {
 
   //FormControllers controllers = FormControllers();
 
+  Timer pollingTimer;
+
+  AppLifecycleState _appLifecycleState;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    setState(() {
+      _appLifecycleState = state;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     firebaseCloudMessagingSetUpListeners(firebaseMessaging);
     setStateBlockingFetchAll();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controllerPhoneNumber.dispose();
     controllerSMS.dispose();
     super.dispose();
@@ -140,6 +140,20 @@ class MyHomePageState extends State<MyHomePage> {
     setStateEnterPhone();
     return true;
   }*/
+
+  void startPollingTimer() {
+    pollingTimer = Timer.periodic(Duration(seconds: 5), (t) {
+      bool inForeground = false;
+      if (_appLifecycleState == null ||
+          _appLifecycleState.index == null ||
+          _appLifecycleState.index == 0) {
+        inForeground = true;
+      }
+      Data.maybePoll(inForeground, () {
+        setState(() {});
+      });
+    });
+  }
 
   Future<bool> setStateHaveRegistration() async {
     setState(() {
@@ -189,6 +203,11 @@ class MyHomePageState extends State<MyHomePage> {
           showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
         });
       }
+    } catch (e) {
+      setStateEnterPhone().then((_) {
+        showDialogWithText(
+            context, 'Chyba při odesílání požadavku: ${e.toString()}', null);
+      });
     }
   }
 
@@ -201,7 +220,12 @@ class MyHomePageState extends State<MyHomePage> {
   void setStateReady() {
     //registrationDone = true;
     homePageState = HomePageState.ready;
-    setState(() {});
+    Data.maybeInitFromDb().then((_) {
+      setState(() {});
+      if (pollingTimer == null) {
+        startPollingTimer();
+      }
+    });
     // TODO first info about firebase message preferences.
     /*getPrefsThenBuild().then((_) {
       showDialogWithText(
@@ -252,6 +276,11 @@ class MyHomePageState extends State<MyHomePage> {
           showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
         });
       }
+    } catch (e) {
+      setStateEnterSMS().then((_) {
+        showDialogWithText(
+            context, 'Chyba při odesílání požadavku: ${e.toString()}', null);
+      });
     }
   }
 
@@ -272,10 +301,16 @@ class MyHomePageState extends State<MyHomePage> {
       setStateHaveRegistration();
       return true;
     }
+    Data.updateAllAndThen(() {
+      setStateReady();
+    });
+    return true;
+
+    /*
     try {
-      await Data.updateRequests();
-      await Data.updateMe();
-      await Data.updatePreferences();
+      await Data.fetchRequests();
+      await Data.fetchMe();
+      await Data.fetchPreferences();
       setStateReady();
     } on APICallException catch (e) {
       // Unauthorized resource.
@@ -289,8 +324,13 @@ class MyHomePageState extends State<MyHomePage> {
       } else {
         // TODO other errors.
       }
+    } on SocketException catch (e) {
+      // TODO deal with this in the UI.
+      debugPrint("Failed to connect to server");
+      // This will preload data from the DB instead.
+      setStateReady();
     }
-    return true;
+    return true;*/
   }
 
   /*void tryToValidateSMS(String smsCode, bool hasRegistration) {
@@ -392,11 +432,13 @@ class MyHomePageState extends State<MyHomePage> {
     return l;
   }
 
-  ListView cards() {
+  List<Widget> cards() {
     if (currentPage == HOME_PAGE) {
-      return ListView(
-        children: cardsForList(Data.acceptedRequests),
-      );
+      if (Data.acceptedRequests.length > 0) {
+        return cardsForList(Data.acceptedRequests);
+      } else {
+        return noTasks('Nemáte žádné přijaté úkoly.');
+      }
     }
     List<Widget> l = List<Widget>();
     List<Widget> pending = cardsForList(Data.pendingRequests);
@@ -414,6 +456,8 @@ class MyHomePageState extends State<MyHomePage> {
         ],
       ));
       l.addAll(pending);
+    } else {
+      l.addAll(noTasks('Nemáte žádné poptávky čekající na Vaše rozhodnutí.'));
     }
     if (rejected.length > 0) {
       l.add(Row(
@@ -429,9 +473,7 @@ class MyHomePageState extends State<MyHomePage> {
       l.addAll(rejected);
     }
 
-    return ListView(
-      children: l,
-    );
+    return l;
   }
 
   void switchToPage(int index) {
@@ -441,7 +483,6 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Widget settingsPageBody() {
-    TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
     return ListView(children: <Widget>[
       ExpansionTile(
           title: Text("Můj profil"),
@@ -452,9 +493,15 @@ class MyHomePageState extends State<MyHomePage> {
           secondary: Icon(Icons.notifications),
           value: Data.preferences.notificationsToApp,
           onChanged: (val) {
-            Data.toggleNotifications().then((_) {
+            Data.toggleNotificationsAndThen((String err) {
               setState(() {});
+              if (err != null) {
+                showDialogWithText(context, err, () {
+                  setState(() {});
+                });
+              }
             });
+            setState(() {});
           }),
     ]);
   }
@@ -491,13 +538,40 @@ class MyHomePageState extends State<MyHomePage> {
     ]);
   }
 
-  Widget noTasks() {
-    return ListView(
-      children: <Widget>[
-        imgBlock('undraw_no_data'),
-        ListTile(title: Center(child: Text('Nemáte žádné přijaté úkoly.'))),
-      ],
-    );
+  List<Widget> noTasks(String msg) {
+    return <Widget>[
+      imgBlock('undraw_no_data'),
+      ListTile(title: Center(child: Text(msg))),
+    ];
+  }
+
+  List<Widget> topBar() {
+    Color c = Color.fromRGBO(0, 0, 0, 0.38);
+    return <Widget>[
+      SizedBox(
+          //: Colors.grey,
+          width: screenWidth,
+          //height: screenWidth * 0.04,
+          child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(240, 240, 240, 1.0),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(screenWidth * 0.015),
+                child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                  Text('Poslední aktualizace: test.',
+                      style: TextStyle(
+                        color: c,
+                        fontSize: screenWidth * 0.035,
+                      )),
+                        SizedBox(width: screenWidth * 0.02),
+                          Icon(Icons.arrow_downward, size: screenWidth * 0.035, color: c,),
+                ])),
+              ))),
+    ];
   }
 
   Widget buildReady() {
@@ -507,12 +581,21 @@ class MyHomePageState extends State<MyHomePage> {
     switch (currentPage) {
       case HOME_PAGE:
       case TASKS_PAGE:
+        /*
         body = LiquidPullToRefresh(
           child: (Data.acceptedRequests.length == 0 && currentPage == HOME_PAGE)
               ? noTasks()
               : cards(),
           onRefresh: _onRefresh,
           showChildOpacityTransition: false,
+          color: PRIMARY_COLOR,
+        );*/
+        body = RefreshIndicator(
+          /*child: (Data.acceptedRequests.length == 0 && currentPage == HOME_PAGE)
+              ? noTasks()
+              : cards(), */
+          child: ListView(children: topBar() + cards()),
+          onRefresh: _onRefresh,
           color: PRIMARY_COLOR,
         );
         break;
