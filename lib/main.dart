@@ -9,6 +9,7 @@ import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:loading_animations/loading_animations.dart';
 
 import 'dart:async';
+import 'dart:math';
 
 import 'data.dart';
 import 'misc.dart';
@@ -107,6 +108,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   AppLifecycleState _appLifecycleState;
 
   String lastExplicitRefreshError;
+  double backoffTime = 10.0;
+  Random random = Random();
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -155,12 +158,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     bool inForeground = isInForeground(_appLifecycleState);
     debugPrint("Timer tick, inForeground: $inForeground");
     if (inForeground) {
-      Data.maybePollAndThen((e) {
+      Data.maybePollAndThen(backoffTime, (e) {
         // Only clear up the bar when we manage to fetch data after it
         // previously failed manually, but don't spam this with auto-refresh
         // failures.
         if (e == null) {
+          debugPrint("Poll successful.");
           setLastRefreshError(e);
+          backoffTime = STALENESS_LIMIT_MS;
+        } else {
+          debugPrint("Poll failed.");
+          backoffTime = backoffTime * 2 + (backoffTime * random.nextInt(100) * 0.01);
         }
         setState(() {});
       });
@@ -337,6 +345,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     await Future.delayed(Duration(milliseconds: 1000));
     Data.updateAllAndThen((e) {
       setLastRefreshError(e);
+      if (e == null) {
+        backoffTime = STALENESS_LIMIT_MS;
+      }
       setState(() {});
     });
   }

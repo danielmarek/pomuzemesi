@@ -93,16 +93,18 @@ class Data {
     }
   }
 
-  static void maybePollAndThen(Function(APICallException) fn) {
-    int STALENESS_LIMIT = 10 * 1000;
-    int now = millisNow();
-    if (now - preferencesTs > STALENESS_LIMIT ||
-        now - requestsTs > STALENESS_LIMIT ||
-        now - profileTs > STALENESS_LIMIT) {
-      debugPrint('Polling ...');
+  static int dataAge() {
+    int minTs = min(preferencesTs, min(requestsTs, profileTs));
+    return millisNow() - minTs;
+  }
+
+  static void maybePollAndThen(double backoff, Function(APICallException) fn) {
+    int staleness = dataAge();
+    if (staleness > backoff) {
+      debugPrint('Polling (staleness=${staleness / 1000.0}s, backoff=${backoff/1000.0}s)...');
       updateAllAndThen(fn);
     } else {
-      debugPrint('Skipping a poll, too early ...');
+      debugPrint('Skipping a poll (staleness=${staleness / 1000.0}s, backoff=${backoff/1000.0}s), too early ...');
     }
   }
 
