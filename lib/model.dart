@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:pomuzemesi/misc.dart';
 
 // TODO: remove fields that are not explicitly used by this app?
 // TODO: model of organisation
@@ -193,12 +194,20 @@ class Request {
   }
 
   String formatFulfillmentDate({bool upper = true}) {
+    String result = 'Neurčený čas';
     if (fulfillmentDate != null) {
-      var dateFormatter = new DateFormat('dd. MM. kk:mm');
-      return dateFormatter.format(fulfillmentDate.toLocal());
-    } else {
-      return upper ? 'Neurčený čas'.toUpperCase() : 'Neurčený čas';
+      int daysFrom = daysFromNow(fulfillmentDate);
+      if (daysFrom == 0) {
+        result = 'Dnes ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+      } else if (daysFrom == -1) {
+        result = 'Včera ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+      } else if (daysFrom == 1) {
+        result = 'Zítra ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+      } else {
+        result = DateFormat('dd. MM. kk:mm').format(fulfillmentDate.toLocal());
+      }
     }
+    return upper ? result.toUpperCase() : result;
   }
 
   String formatCreatedAt() {
