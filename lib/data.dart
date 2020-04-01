@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:pomuzemesi/db.dart';
 import 'package:pomuzemesi/misc.dart';
+import 'package:intl/intl.dart';
 
 import 'dart:io';
+import 'dart:math';
 
 import 'model.dart';
 import 'rest_client.dart';
@@ -80,31 +82,23 @@ class Data {
       await RestClient.setNotificationsToApp(newSetting);
       await _fetchPreferences();
     } on APICallException catch (e) {
-      // Unauthorized resource.
-      if (e.errorCode == 401) {
-        // TODO deal with this plus upgrade required.
-        debugPrint("blockingFetchAll: 401");
-        err = "Nemáte autorizaci.";
+      if (e.errorKey == APICallException.CONNECTION_FAILED) {
+        err = "Nepodařilo se změnit nastavení. Nejste offline?";
       } else {
-        // TODO other errors.
-        err = "Other error.";
+        err = e.cause;
       }
-    } on SocketException catch (_) {
-      // TODO deal with this in the UI.
-      debugPrint("Failed to connect to server");
-      err = "Nepodařilo se změnit nastavení. Nejste offline?";
-    } catch (e) {
-      err = 'Chyba při odesílání požadavku: ${e.toString()}';
     }
     if (fn != null) {
       fn(err);
     }
   }
 
-  static void maybePoll(Function fn) {
+  static void maybePollAndThen(Function(APICallException) fn) {
     int STALENESS_LIMIT = 10 * 1000;
     int now = millisNow();
-    if (now - preferencesTs > STALENESS_LIMIT || now - requestsTs > STALENESS_LIMIT || now - profileTs > STALENESS_LIMIT) {
+    if (now - preferencesTs > STALENESS_LIMIT ||
+        now - requestsTs > STALENESS_LIMIT ||
+        now - profileTs > STALENESS_LIMIT) {
       debugPrint('Polling ...');
       updateAllAndThen(fn);
     } else {
@@ -112,32 +106,18 @@ class Data {
     }
   }
 
-  static void updateAllAndThen(Function fn) async {
+  static void updateAllAndThen(Function(APICallException) fn) async {
+    APICallException ex;
     try {
       await _fetchRequests();
       await _fetchPreferences();
       await _fetchMe();
     } on APICallException catch (e) {
-      // Unauthorized resource.
-      if (e.errorCode == 401) {
-        // TODO deal with this plus upgrade required.
-        debugPrint("blockingFetchAll: 401");
-        /*homePageState = HomePageState.enterPhone;
-        controllerSMS.text = '';
-        await SharedPrefs.removeToken();
-        setState(() {});
-        return true;*/
-      } else {
-        // TODO other errors.
-      }
-    } on SocketException catch (_) {
-      // TODO deal with this in the UI.
-      debugPrint("Failed to connect to server");
-      // This will preload data from the DB instead.
-      //setStateReady();
+      debugPrint("updateAllAndThen: ${e.str()}");
+      ex = e;
     }
     if (fn != null) {
-      fn();
+      fn(ex);
     }
   }
 
@@ -171,9 +151,9 @@ class Data {
       DbRecords.saveString(key: KEY_REQUESTS, value: body, ts: requestsTs);
       allRequests = all;
       partitionRequests();
-    } catch (e) {
-      debugPrint("ERROR _fetchRequests: ${e.toString()}");
-      return false;
+    } on APICallException catch (e) {
+      debugPrint("ERROR _fetchRequests: ${e.str()}");
+      throw e;
     }
 
     if (_onRequestsUpdate != null) {
@@ -189,9 +169,9 @@ class Data {
       profileTs = millisNow();
       DbRecords.saveString(key: KEY_PROFILE, value: body, ts: profileTs);
       me = r;
-    } catch (e) {
-      debugPrint("ERROR _fetchMe: ${e.toString()}");
-      return false;
+    } on APICallException catch (e) {
+      debugPrint("ERROR _fetchMe: ${e.str()}");
+      throw e;
     }
     if (_onMeUpdate != null) {
       _onMeUpdate();
@@ -207,13 +187,26 @@ class Data {
       DbRecords.saveString(
           key: KEY_PREFERENCES, value: body, ts: preferencesTs);
       preferences = r;
-    } catch (e) {
-      debugPrint("ERROR _fetchPreferences: ${e.toString()}");
-      return false;
+    } on APICallException catch (e) {
+      debugPrint("ERROR _fetchPreferences: ${e.str()}");
+      throw e;
     }
     if (_onPreferencesUpdate != null) {
       _onPreferencesUpdate();
     }
     return true;
+  }
+
+  static String lastUpdatePretty() {
+    if (requestsTs == null || profileTs == null || preferencesTs == null) {
+      return 'neznámá';
+    }
+    int minTs = min(requestsTs, min(profileTs, preferencesTs));
+    var lastFullUpdate = DateTime.fromMillisecondsSinceEpoch(minTs);
+    if (daysFromNow(lastFullUpdate) == 0) {
+      return DateFormat('HH:mm:ss').format(lastFullUpdate.toLocal());
+    } else {
+      return DateFormat('M.d.').format(lastFullUpdate.toLocal());
+    }
   }
 }

@@ -1,19 +1,34 @@
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io';
 
 import 'model.dart';
 
 // TODO distinguish between different non-200s
+// 426: upgrade required
 
 class APICallException implements Exception {
-  final String cause;
+  static String UNAUTHORIZED = 'UNAUTHORIZED';
+  static String UNKNOWN = 'UNKNOWN';
+  static String CONNECTION_FAILED = 'CONNECTION_FAILED';
+  static String PARSING_ERROR = 'PARSING_ERROR';
+
+  // HTTP code, e.g. 409.
   final int errorCode;
 
-  APICallException(this.errorCode, this.cause);
+  // Human-readable description.
+  final String cause;
 
-  String errorMessage() {
-    return 'API call failed: $errorCode: $cause';
+  // e.g. REQUEST_CAPACITY_EXCEEDED
+  final String errorKey;
+
+  // 409 {"error_key":"REQUEST_CAPACITY_EXCEEDED","message":null}
+
+  APICallException({this.errorCode, this.cause, this.errorKey});
+
+  String str() {
+    return "$errorKey($errorCode): $cause";
   }
 }
 
@@ -33,7 +48,10 @@ class RestClient {
     debugPrint("response body:\n${response.body}");
   }*/
 
-  static Future<String> _call({@required Function fn, @required String url, Map<String, String> headers}) async {
+  static Future<String> _call(
+      {@required Function fn,
+      @required String url,
+      Map<String, String> headers}) async {
     http.Response response;
     try {
       debugPrint("calling $url ...");
@@ -41,14 +59,45 @@ class RestClient {
       debugPrint("response code: ${response.statusCode}");
       debugPrint("response headers:\n${response.headers}");
       debugPrint("response body:\n${response.body}");
+    } on SocketException catch (_) {
+      throw APICallException(
+          errorCode: -1,
+          errorKey: APICallException.CONNECTION_FAILED,
+          cause: 'Nepodařilo se připojit k serveru, nejste offline?');
     } catch (e) {
-
+      throw APICallException(
+          errorCode: -2,
+          errorKey: APICallException.UNKNOWN,
+          cause: 'Neznámá chyba při komunikaci se serverem.');
     }
 
     if (response.statusCode == 200) {
       return response.body;
     } else {
-      throw APICallException(response.statusCode, response.body);
+      if (response.statusCode == 401) {
+        throw APICallException(
+            errorCode: response.statusCode,
+            errorKey: APICallException.UNAUTHORIZED,
+            cause: 'Nemáte oprávnění.');
+      }
+
+      String errorKey, msg;
+      try {
+        var r = json.decode(response.body);
+        errorKey = r.containsKey('error_key') ? r['error_key'] : null;
+        msg = r.containsKey('message') ? r['message'] : null;
+      } catch (_) {
+        debugPrint("Failed to parse error: ${response.body}");
+      }
+
+      throw APICallException(
+          errorCode: response.statusCode,
+          errorKey: (errorKey != null && errorKey != '')
+              ? errorKey
+              : APICallException.UNKNOWN,
+          cause: (msg != null && msg != '')
+              ? msg
+              : 'Neznámá chyba při komunikaci se serverem (${response.statusCode}).');
     }
   }
 
@@ -56,7 +105,8 @@ class RestClient {
       String phone, String reCaptcha, String fcmToken) async {
     String body = await _call(
       fn: httpClient.post,
-      url: 'api/v1/session/new?phone_number=$phone&recaptcha_token=$reCaptcha&fcm_token=$fcmToken',
+      url:
+          'api/v1/session/new?phone_number=$phone&recaptcha_token=$reCaptcha&fcm_token=$fcmToken',
     );
     return true;
   }
@@ -64,17 +114,27 @@ class RestClient {
   static Future<String> sessionCreate(String phone, String code) async {
     String body = await _call(
       fn: httpClient.post,
-      url: 'api/v1/session/create?phone_number=$phone&sms_verification_code=$code',
+      url:
+          'api/v1/session/create?phone_number=$phone&sms_verification_code=$code',
     );
-    var r = json.decode(body);
-    return r['token'];
+    String token;
+    try {
+      var r = json.decode(body);
+      return r['token'];
+    } catch (_) {
+      throw APICallException(
+        errorCode: -3,
+        errorKey: APICallException.PARSING_ERROR,
+        cause: 'Nepodařilo se zpracovat odpověď od serveru.',
+      );
+    }
   }
 
   static Future<String> getVolunteerPreferences() async {
     String body = await _call(
       fn: httpClient.get,
       url: 'api/v1/volunteer/preferences',
-        headers: {'Authorization': 'Bearer $token'},
+      headers: {'Authorization': 'Bearer $token'},
     );
     return body;
   }
@@ -83,7 +143,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.get,
       url: 'api/v1/volunteer/profile',
-        headers: {'Authorization': 'Bearer $token'},
+      headers: {'Authorization': 'Bearer $token'},
     );
     return body;
   }
@@ -91,9 +151,9 @@ class RestClient {
   static Future<bool> setNotificationsToApp(bool sendNotificationsToApp) async {
     String value = sendNotificationsToApp ? 'true' : 'false';
     String body = await _call(
-        fn: httpClient.put,
-        url: 'api/v1/volunteer/preferences?notifications_to_app=$value',
-        headers: {'Authorization': 'Bearer $token'},
+      fn: httpClient.put,
+      url: 'api/v1/volunteer/preferences?notifications_to_app=$value',
+      headers: {'Authorization': 'Bearer $token'},
     );
     return true;
   }
@@ -105,8 +165,8 @@ class RestClient {
      */
 
     String body = await _call(
-        fn: httpClient.get,
-        url: 'api/v1/volunteer/requests',
+      fn: httpClient.get,
+      url: 'api/v1/volunteer/requests',
       headers: {'Authorization': 'Bearer $token'},
     );
     return body;
@@ -124,19 +184,35 @@ class RestClient {
 
   static Future<List<Organisation>> getMyOrganisations() async {
     String body = await _call(
-        fn: httpClient.get,
-        url: 'api/v1/volunteer/organisations',
+      fn: httpClient.get,
+      url: 'api/v1/volunteer/organisations',
       headers: {'Authorization': 'Bearer $token'},
     );
-    return Organisation.listFromRawJson(body);
+    try {
+      return Organisation.listFromRawJson(body);
+    } catch (_) {
+      throw APICallException(
+        errorCode: -4,
+        errorKey: APICallException.PARSING_ERROR,
+        cause: 'Nepodařilo se zpracovat odpověď od serveru.',
+      );
+    }
   }
 
   static Future<List<Organisation>> getAllOrganisations() async {
     String body = await _call(
-        fn: httpClient.get,
-        url: 'api/v1/organisations',
+      fn: httpClient.get,
+      url: 'api/v1/organisations',
       headers: {'Authorization': 'Bearer $token'},
     );
-    return Organisation.listFromRawJson(body);
+    try {
+      return Organisation.listFromRawJson(body);
+    } catch (_) {
+      throw APICallException(
+        errorCode: -5,
+        errorKey: APICallException.PARSING_ERROR,
+        cause: 'Nepodařilo se zpracovat odpověď od serveru.',
+      );
+    }
   }
 }

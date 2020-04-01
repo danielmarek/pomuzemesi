@@ -34,12 +34,8 @@ class _DetailPageState extends State<DetailPage> {
       if (e.errorCode == 409) {
         err = 'Tento úkol je již plně obsazen.';
       } else {
-        err = 'Změnu stavu se nepodařilo odeslat.';
+        err = e.cause;
       }
-    } on SocketException catch (_) {
-      err = 'K serveru se nepodařilo připojit. Nejste offline?';
-    } catch (e) {
-      err = 'Chyba při odesílání požadavku';
     }
     return err;
   }
