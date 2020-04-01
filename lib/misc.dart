@@ -23,6 +23,13 @@ double FONT_SIZE_SMALLER = 0.03;
 double LEFT_OF_BUTTON = 0.1;
 double LEFT_OF_TEXT_BLOCK = 0.04;
 
+// 10s. Basic time between polls, will exponentially increase on failures.
+double STALENESS_LIMIT_MS = 10.0 * 1000;
+
+int millisNow() {
+  return DateTime.now().toUtc().millisecondsSinceEpoch;
+}
+
 void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
   if (Platform.isIOS) iosPermission(firebaseMessaging);
 
@@ -50,4 +57,11 @@ void iosPermission(FirebaseMessaging firebaseMessaging) {
       .listen((IosNotificationSettings settings) {
     print("Settings registered: $settings");
   });
+}
+
+int daysFromNow(DateTime date) {
+  DateTime now = DateTime.now();
+  return DateTime(date.year, date.month, date.day)
+      .difference(DateTime(now.year, now.month, now.day))
+      .inDays;
 }

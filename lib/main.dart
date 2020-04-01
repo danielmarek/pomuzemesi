@@ -3,31 +3,19 @@ import 'package:firebase_analytics/observer.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:loading_animations/loading_animations.dart';
 
-//import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
-
-// FIXME DEBUG
-//import 'api_page.dart';
-//import 'a_webview_page.dart';
-//import 'captcha_page.dart';
-
-import 'dart:io';
 import 'dart:async';
-//import 'dart:ui' as ui;
+import 'dart:math';
 
 import 'data.dart';
-import 'model.dart';
-
-//import 'task_detail_page.dart';
+import 'db.dart';
 import 'misc.dart';
-
-//import 'personal_details_form.dart';
+import 'model.dart';
 import 'rest_client.dart';
-import 'shared_prefs.dart';
 import 'widget_misc.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics();
@@ -36,7 +24,6 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Crashlytics.instance.enableInDevMode = true;
   FlutterError.onError = Crashlytics.instance.recordFlutterError;
-  SharedPrefs.init();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) {
     runApp(PomuzemeSiApp());
@@ -94,7 +81,7 @@ class MyHomePage extends StatefulWidget {
   MyHomePageState createState() => MyHomePageState();
 }
 
-class MyHomePageState extends State<MyHomePage> {
+class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   FirebaseMessaging firebaseMessaging = FirebaseMessaging();
   double screenWidth;
 
@@ -115,15 +102,30 @@ class MyHomePageState extends State<MyHomePage> {
 
   //FormControllers controllers = FormControllers();
 
+  Timer pollingTimer;
+
+  AppLifecycleState _appLifecycleState;
+
+  String lastExplicitRefreshError;
+  double backoffTime = 10.0;
+  Random random = Random();
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appLifecycleState = state;
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     firebaseCloudMessagingSetUpListeners(firebaseMessaging);
     setStateBlockingFetchAll();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controllerPhoneNumber.dispose();
     controllerSMS.dispose();
     super.dispose();
@@ -140,6 +142,38 @@ class MyHomePageState extends State<MyHomePage> {
     setStateEnterPhone();
     return true;
   }*/
+
+  static bool isInForeground(AppLifecycleState state) {
+    return (state == null || state.index == null || state.index == 0);
+  }
+
+  void startPollingTimer() {
+    pollingTimer = Timer.periodic(Duration(seconds: 2), (t) {
+      timerTick();
+    });
+  }
+
+  void timerTick() async {
+    bool inForeground = isInForeground(_appLifecycleState);
+    debugPrint("Timer tick, inForeground: $inForeground");
+    if (inForeground) {
+      Data.maybePollAndThen(backoffTime, (e) {
+        // Only clear up the bar when we manage to fetch data after it
+        // previously failed manually, but don't spam this with auto-refresh
+        // failures.
+        if (e == null) {
+          debugPrint("Poll successful.");
+          setLastRefreshError(e);
+          backoffTime = STALENESS_LIMIT_MS;
+        } else {
+          debugPrint("Poll failed.");
+          backoffTime =
+              backoffTime * 3 + (backoffTime * random.nextInt(100) * 0.01);
+        }
+        setState(() {});
+      });
+    }
+  }
 
   Future<bool> setStateHaveRegistration() async {
     setState(() {
@@ -171,7 +205,6 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   void askForSMS() async {
-    //phoneNumber = phone;
     try {
       // TODO: captcha token.
       await RestClient.sessionNew(phoneNumber, 'foobar', fcmToken);
@@ -186,7 +219,7 @@ class MyHomePageState extends State<MyHomePage> {
         });
       } else {
         setStateEnterPhone().then((_) {
-          showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
+          showDialogWithText(context, e.cause, null);
         });
       }
     }
@@ -201,7 +234,12 @@ class MyHomePageState extends State<MyHomePage> {
   void setStateReady() {
     //registrationDone = true;
     homePageState = HomePageState.ready;
-    setState(() {});
+    Data.maybeInitFromDb().then((_) {
+      setState(() {});
+      if (pollingTimer == null) {
+        startPollingTimer();
+      }
+    });
     // TODO first info about firebase message preferences.
     /*getPrefsThenBuild().then((_) {
       showDialogWithText(
@@ -231,7 +269,7 @@ class MyHomePageState extends State<MyHomePage> {
     try {
       authToken = await RestClient.sessionCreate(phoneNumber, smsCode);
       RestClient.token = authToken;
-      await SharedPrefs.setToken(authToken);
+      await TokenWrapper.setToken(authToken);
       setStateBlockingFetchAll();
     } on APICallException catch (e) {
       if (e.errorCode == 401) {
@@ -249,7 +287,7 @@ class MyHomePageState extends State<MyHomePage> {
         });
       } else {
         setStateEnterSMS().then((_) {
-          showDialogWithText(context, 'Chyba od serveru: ${e.errorCode}', null);
+          showDialogWithText(context, e.cause, null);
         });
       }
     }
@@ -264,7 +302,7 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Future<bool> blockingFetchAll() async {
-    authToken = await SharedPrefs.getToken();
+    authToken = await TokenWrapper.getToken();
     RestClient.token = authToken;
     loaded = true;
     debugPrint("blockingFetchAll: auth token: $authToken");
@@ -272,43 +310,12 @@ class MyHomePageState extends State<MyHomePage> {
       setStateHaveRegistration();
       return true;
     }
-    try {
-      await Data.updateRequests();
-      await Data.updateMe();
-      await Data.updatePreferences();
+    Data.updateAllAndThen((e) {
+      setLastRefreshError(e);
       setStateReady();
-    } on APICallException catch (e) {
-      // Unauthorized resource.
-      if (e.errorCode == 401) {
-        debugPrint("blockingFetchAll: 401");
-        homePageState = HomePageState.enterPhone;
-        controllerSMS.text = '';
-        await SharedPrefs.removeToken();
-        setState(() {});
-        return true;
-      } else {
-        // TODO other errors.
-      }
-    }
+    });
     return true;
   }
-
-  /*void tryToValidateSMS(String smsCode, bool hasRegistration) {
-    if (smsCode == '123456') {
-      SharedPrefs.setToken('123456');
-      if (hasRegistration) {
-        setStateReady();
-      } else {
-        setStateEnterRegistrationDetails();
-      }
-      getPrefsThenBuild();
-    } else {
-      setState(() {
-        homePageState = HomePageState.enterSMS;
-      });
-      showDialogWithText(context, "Kód byl zadán chybně.", () {});
-    }
-  }*/
 
   Widget imgBlock(String filename) {
     return ListTile(
@@ -324,56 +331,27 @@ class MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  /*List<Widget> buildCenterContentNotAuthorized() {
-    return [
-      ListTile(
-        title: SizedBox(height: 30),
-      ),
-      ListTile(
-        title: Image.asset('assets/img/undraw_confirmation.png'),
-      ),
-      ListTile(
-        title: Text(
-            "Vaše registrace je hotová, už jen čeká na schválení organizací.",
-            style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
-      ),
-      ListTile(
-        title: Text(
-            "Schválení Vám oznámíme SMS/notifikací a Vám pak můžou začít chodit poptávky.",
-            style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
-      ),
-    ];
-  }*/
-
-  /*List<Widget> buildCenterContentWithNoTasks() {
-    return [
-      ListTile(
-        title: SizedBox(height: 30),
-      ),
-      ListTile(
-        title: Image.asset('assets/img/pomuzemesi-drawing.png'),
-      ),
-      ListTile(
-        title: Text(
-            "Zatím jste se neujali žádného úkolu. Nějaký si vyberte, pak ho uvidíte tady.",
-            style: TextStyle(fontSize: screenWidth * FONT_SIZE_NORMAL)),
-      ),
-      buttonListTile("Přidat úkol", screenWidth, () {
-        //launchTaskSearch(context);
-      }),
-    ];
-  }*/
+  void setLastRefreshError(APICallException e) {
+    debugPrint("setLastRefreshError $e");
+    if (e == null) {
+      lastExplicitRefreshError = null;
+    } else {
+      lastExplicitRefreshError = e.cause;
+    }
+  }
 
   Future<void> _onRefresh() async {
     await Future.delayed(Duration(milliseconds: 1000));
-    Data.updateAllAndThen(() {
+    Data.updateAllAndThen((e) {
+      setLastRefreshError(e);
+      if (e == null) {
+        backoffTime = STALENESS_LIMIT_MS;
+      }
       setState(() {});
     });
   }
 
-  List<Widget> cardsForList(List<Request> requests) {
-    //List<Request> requests =
-    //   currentPage == 0 ? Data.acceptedRequests : Data.otherRequests;
+  List<Widget> cardsForList(List<Request> requests, {bool bland = false}) {
     List<Widget> l = List<Widget>();
     for (Request request in requests) {
       l.add(CardBuilder.buildCard(
@@ -381,8 +359,10 @@ class MyHomePageState extends State<MyHomePage> {
         request: request,
         cameFrom: HOME_PAGE,
         isDetail: false,
+        bland: bland,
         onReturn: () {
-          Data.updateAllAndThen(() {
+          Data.updateAllAndThen((e) {
+            setLastRefreshError(e);
             setState(() {});
           });
         },
@@ -391,28 +371,35 @@ class MyHomePageState extends State<MyHomePage> {
     return l;
   }
 
-  ListView cards() {
+  List<Widget> cards() {
     if (currentPage == HOME_PAGE) {
-      return ListView(
-        children: cardsForList(Data.acceptedRequests),
-      );
+      if (Data.acceptedRequests.length > 0) {
+        return cardsForList(Data.acceptedRequests);
+      } else {
+        return noTasks('Nemáte žádné přijaté úkoly.');
+      }
     }
     List<Widget> l = List<Widget>();
     List<Widget> pending = cardsForList(Data.pendingRequests);
-    List<Widget> rejected = cardsForList(Data.rejectedRequests);
+    List<Widget> rejected = cardsForList(Data.rejectedRequests, bland: true);
     l.add(SizedBox(height: screenWidth * 0.02));
+
+    l.add(Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.all(screenWidth * 0.02),
+          child: Text("Čekají na rozhodnutí".toUpperCase(),
+              style: CardBuilder.tsCardTop),
+        )
+      ],
+    ));
+
     if (pending.length > 0) {
-      l.add(Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(screenWidth * 0.02),
-            child: Text("Čekají na rozhodnutí".toUpperCase(),
-                style: CardBuilder.tsCardTop),
-          )
-        ],
-      ));
       l.addAll(pending);
+    } else {
+      l.addAll(noTasks('Nemáte žádné poptávky čekající na Vaše rozhodnutí.'));
+      l.add(SizedBox(height: screenWidth * 0.15));
     }
     if (rejected.length > 0) {
       l.add(Row(
@@ -428,9 +415,7 @@ class MyHomePageState extends State<MyHomePage> {
       l.addAll(rejected);
     }
 
-    return ListView(
-      children: l,
-    );
+    return l;
   }
 
   void switchToPage(int index) {
@@ -440,7 +425,6 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Widget settingsPageBody() {
-    TextStyle ts = TextStyle(fontSize: screenWidth * 0.04);
     return ListView(children: <Widget>[
       ExpansionTile(
           title: Text("Můj profil"),
@@ -451,9 +435,15 @@ class MyHomePageState extends State<MyHomePage> {
           secondary: Icon(Icons.notifications),
           value: Data.preferences.notificationsToApp,
           onChanged: (val) {
-            Data.toggleNotifications().then((_) {
+            Data.toggleNotificationsAndThen((String err) {
               setState(() {});
+              if (err != null) {
+                showDialogWithText(context, err, () {
+                  setState(() {});
+                });
+              }
             });
+            setState(() {});
           }),
     ]);
   }
@@ -490,13 +480,84 @@ class MyHomePageState extends State<MyHomePage> {
     ]);
   }
 
-  Widget noTasks() {
-    return ListView(
-      children: <Widget>[
-        imgBlock('undraw_no_data'),
-        ListTile(title: Center(child: Text('Nemáte žádné přijaté úkoly.'))),
-      ],
+  List<Widget> noTasks(String msg) {
+    return <Widget>[
+      imgBlock('undraw_no_data'),
+      ListTile(
+          title: Center(
+              child: Text(
+        msg,
+        style: TextStyle(
+          color: Color.fromRGBO(0, 0, 0, 0.6),
+          fontSize: screenWidth * 0.035,
+        ),
+      ))),
+    ];
+  }
+
+  List<Widget> topBar() {
+    debugPrint("TOPBAR: $lastExplicitRefreshError");
+    Color textColor = Color.fromRGBO(0, 0, 0, 0.38);
+    Color boxBkg = Color.fromRGBO(240, 240, 240, 1.0);
+    EdgeInsets insets = EdgeInsets.all(screenWidth * 0.015);
+    EdgeInsets insetsError = EdgeInsets.only(
+      top: screenWidth * 0.025,
+      left: screenWidth * 0.015,
+      right: screenWidth * 0.015,
+      bottom: screenWidth * 0.015,
     );
+    double sizes = screenWidth * 0.035;
+    TextStyle ts = TextStyle(
+      color: textColor,
+      fontSize: sizes,
+    );
+    TextStyle tsError = TextStyle(
+      color: SECONDARY_COLOR2,
+      fontSize: sizes,
+    );
+
+    List<Widget> l = List<Widget>();
+    if (lastExplicitRefreshError != null) {
+      l.add(SizedBox(
+          width: screenWidth,
+          child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: boxBkg,
+              ),
+              child: Padding(
+                padding: insetsError,
+                child: Center(
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                      Text(lastExplicitRefreshError, style: tsError),
+                    ])),
+              ))));
+    }
+
+    l.add(SizedBox(
+        width: screenWidth,
+        child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: boxBkg,
+            ),
+            child: Padding(
+              padding: insets,
+              child: Center(
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                    Text('Poslední aktualizace: ${Data.lastUpdatePretty()}',
+                        style: ts),
+                    SizedBox(width: screenWidth * 0.02),
+                    Icon(
+                      Icons.arrow_downward,
+                      size: sizes,
+                      color: textColor,
+                    ),
+                  ])),
+            ))));
+    return l;
   }
 
   Widget buildReady() {
@@ -506,12 +567,21 @@ class MyHomePageState extends State<MyHomePage> {
     switch (currentPage) {
       case HOME_PAGE:
       case TASKS_PAGE:
+        /*
         body = LiquidPullToRefresh(
           child: (Data.acceptedRequests.length == 0 && currentPage == HOME_PAGE)
               ? noTasks()
               : cards(),
           onRefresh: _onRefresh,
           showChildOpacityTransition: false,
+          color: PRIMARY_COLOR,
+        );*/
+        body = RefreshIndicator(
+          /*child: (Data.acceptedRequests.length == 0 && currentPage == HOME_PAGE)
+              ? noTasks()
+              : cards(), */
+          child: ListView(children: topBar() + cards()),
+          onRefresh: _onRefresh,
           color: PRIMARY_COLOR,
         );
         break;
@@ -786,7 +856,7 @@ class MyHomePageState extends State<MyHomePage> {
                       phoneNumber = null;
                       controllerPhoneNumber.text = '';
                       controllerSMS.text = '';
-                      SharedPrefs.removeToken().then((_) {
+                      DbRecords.deleteAll().then((_) {
                         setStateHaveRegistration();
                         Navigator.of(context).pop();
                       });
