@@ -1,29 +1,26 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pomuzemesi/misc.dart';
 
-String PREFS_TOKEN = 'token';
+import 'db.dart';
+import 'data.dart';
 
 class SharedPrefs {
-  static Future<SharedPreferences> _prefs;
-
-  static init() {
-    _prefs = SharedPreferences.getInstance();
-  }
 
   // Returns null if not set.
   static Future<String> getToken() async {
-    SharedPreferences prefs = await _prefs;
-    String token = prefs.getString(PREFS_TOKEN);
-    return token;
+    DbRecord r = await DbRecords.getRecord(Data.KEY_TOKEN);
+    if (r == null) {
+      return null;
+    }
+    return r.recString;
   }
 
   static Future<bool> setToken(String token) async {
-    SharedPreferences prefs = await _prefs;
-    prefs.setString(PREFS_TOKEN, token);
+    await DbRecords.saveString(key: Data.KEY_TOKEN, value: token, ts: millisNow());
     return true;
   }
 
   static Future<bool> removeToken() async {
-    SharedPreferences prefs = await _prefs;
-    return prefs.remove(PREFS_TOKEN);
+    await DbRecords.saveString(key: Data.KEY_TOKEN, value: null, ts: millisNow());
+    return true;
   }
 }

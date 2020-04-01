@@ -24,7 +24,6 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Crashlytics.instance.enableInDevMode = true;
   FlutterError.onError = Crashlytics.instance.recordFlutterError;
-  SharedPrefs.init();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) {
     runApp(PomuzemeSiApp());

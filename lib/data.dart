@@ -13,6 +13,7 @@ class Data {
   static int KEY_PREFERENCES = 0;
   static int KEY_REQUESTS = 1;
   static int KEY_PROFILE = 2;
+  static int KEY_TOKEN = 3;
 
   static List<Request> allRequests,
       acceptedRequests,
