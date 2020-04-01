@@ -168,7 +168,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         } else {
           debugPrint("Poll failed.");
           backoffTime =
-              backoffTime * 2 + (backoffTime * random.nextInt(100) * 0.01);
+              backoffTime * 3 + (backoffTime * random.nextInt(100) * 0.01);
         }
         setState(() {});
       });
@@ -205,7 +205,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void askForSMS() async {
-    //phoneNumber = phone;
     try {
       // TODO: captcha token.
       await RestClient.sessionNew(phoneNumber, 'foobar', fcmToken);
