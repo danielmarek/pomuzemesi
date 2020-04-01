@@ -13,6 +13,7 @@ class APICallException implements Exception {
   static String UNKNOWN = 'UNKNOWN';
   static String CONNECTION_FAILED = 'CONNECTION_FAILED';
   static String PARSING_ERROR = 'PARSING_ERROR';
+  static String UPGRADE_REQUIRED = 'UPGRADE_REQUIRED';
 
   // HTTP code, e.g. 409.
   final int errorCode;
@@ -79,6 +80,11 @@ class RestClient {
             errorCode: response.statusCode,
             errorKey: APICallException.UNAUTHORIZED,
             cause: 'Nemáte oprávnění.');
+      } else if (response.statusCode == 426) {
+        throw APICallException(
+            errorCode: response.statusCode,
+            errorKey: APICallException.UPGRADE_REQUIRED,
+            cause: 'Je třeba aktualizovat aplikaci.');
       }
 
       String errorKey, msg;
