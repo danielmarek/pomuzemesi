@@ -10,10 +10,10 @@ import 'model.dart';
 import 'rest_client.dart';
 
 class Data {
-  static int KEY_PREFERENCES = 0;
-  static int KEY_REQUESTS = 1;
-  static int KEY_PROFILE = 2;
-  static int KEY_TOKEN = 3;
+  static String KEY_PREFERENCES = 'PREFERENCES';
+  static String KEY_REQUESTS = 'REQUESTS';
+  static String KEY_PROFILE = 'PROFILE';
+  static String KEY_TOKEN = 'TOKEN';
 
   static List<Request> allRequests,
       acceptedRequests,
@@ -102,10 +102,12 @@ class Data {
   static void maybePollAndThen(double backoff, Function(APICallException) fn) {
     int staleness = dataAge();
     if (staleness > backoff) {
-      debugPrint('Polling (staleness=${staleness / 1000.0}s, backoff=${backoff/1000.0}s)...');
+      debugPrint(
+          'Polling (staleness=${staleness / 1000.0}s, backoff=${backoff / 1000.0}s)...');
       updateAllAndThen(fn);
     } else {
-      debugPrint('Skipping a poll (staleness=${staleness / 1000.0}s, backoff=${backoff/1000.0}s), too early ...');
+      debugPrint(
+          'Skipping a poll (staleness=${staleness / 1000.0}s, backoff=${backoff / 1000.0}s), too early ...');
     }
   }
 
@@ -211,5 +213,22 @@ class Data {
     } else {
       return DateFormat('M.d.').format(lastFullUpdate.toLocal());
     }
+  }
+}
+
+class TokenWrapper {
+  // Returns null if not set.
+  static Future<String> getToken() async {
+    DbRecord r = await DbRecords.getRecord(Data.KEY_TOKEN);
+    if (r == null) {
+      return null;
+    }
+    return r.recString;
+  }
+
+  static Future<bool> setToken(String token) async {
+    await DbRecords.saveString(
+        key: Data.KEY_TOKEN, value: token, ts: millisNow());
+    return true;
   }
 }

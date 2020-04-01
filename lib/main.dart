@@ -12,10 +12,10 @@ import 'dart:async';
 import 'dart:math';
 
 import 'data.dart';
+import 'db.dart';
 import 'misc.dart';
 import 'model.dart';
 import 'rest_client.dart';
-import 'shared_prefs.dart';
 import 'widget_misc.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics();
@@ -167,7 +167,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           backoffTime = STALENESS_LIMIT_MS;
         } else {
           debugPrint("Poll failed.");
-          backoffTime = backoffTime * 2 + (backoffTime * random.nextInt(100) * 0.01);
+          backoffTime =
+              backoffTime * 2 + (backoffTime * random.nextInt(100) * 0.01);
         }
         setState(() {});
       });
@@ -269,7 +270,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     try {
       authToken = await RestClient.sessionCreate(phoneNumber, smsCode);
       RestClient.token = authToken;
-      await SharedPrefs.setToken(authToken);
+      await TokenWrapper.setToken(authToken);
       setStateBlockingFetchAll();
     } on APICallException catch (e) {
       if (e.errorCode == 401) {
@@ -302,7 +303,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   Future<bool> blockingFetchAll() async {
-    authToken = await SharedPrefs.getToken();
+    authToken = await TokenWrapper.getToken();
     RestClient.token = authToken;
     loaded = true;
     debugPrint("blockingFetchAll: auth token: $authToken");
@@ -856,7 +857,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       phoneNumber = null;
                       controllerPhoneNumber.text = '';
                       controllerSMS.text = '';
-                      SharedPrefs.removeToken().then((_) {
+                      DbRecords.deleteAll().then((_) {
                         setStateHaveRegistration();
                         Navigator.of(context).pop();
                       });
