@@ -90,7 +90,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   TextEditingController controllerPhoneNumber = new TextEditingController();
   TextEditingController controllerSMS = new TextEditingController();
 
-  String fcmToken, authToken, phoneNumber;
+  String fcmToken, phoneNumber;
   bool loaded = false;
 
   //bool registrationDone = false;
@@ -109,6 +109,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   String lastExplicitRefreshError;
   double backoffTime = 10.0;
   Random random = Random();
+  bool showNotificationsPreset = false;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -154,6 +155,16 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void timerTick() async {
+    if (homePageState != HomePageState.ready) {
+      return;
+    }
+    int tokenValidSeconds = TokenWrapper.tokenValidSeconds(TokenWrapper.token);
+    debugPrint("TOKEN VALID FOR: $tokenValidSeconds s");
+    if (tokenValidSeconds < REFRESH_TOKEN_BEFORE) {
+      TokenWrapper.maybeTryToRefresh();
+      return;
+    }
+
     bool inForeground = isInForeground(_appLifecycleState);
     debugPrint("Timer tick, inForeground: $inForeground");
     if (inForeground) {
@@ -239,14 +250,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       if (pollingTimer == null) {
         startPollingTimer();
       }
+      if (showNotificationsPreset) {
+        showDialogWithText(context, "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.", null);
+      }
     });
-    // TODO first info about firebase message preferences.
-    /*getPrefsThenBuild().then((_) {
-      showDialogWithText(
-          context,
-          "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.",
-          () {});
-    });*/
   }
 
   /*void setStateUploadProfile() {
@@ -267,10 +274,15 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   void submitSMSCode(String smsCode) async {
     try {
-      authToken = await RestClient.sessionCreate(phoneNumber, smsCode);
-      RestClient.token = authToken;
-      await TokenWrapper.setToken(authToken);
-      setStateBlockingFetchAll();
+      String t = await RestClient.sessionCreate(phoneNumber, smsCode);
+      TokenWrapper.saveToken(t);
+      Data.toggleNotificationsAndThen(
+        setValue: true,
+        then: (_) {
+          showNotificationsPreset = true;
+          setStateBlockingFetchAll();
+        }
+      );
     } on APICallException catch (e) {
       if (e.errorCode == 401) {
         setStateEnterSMS().then((_) {
@@ -302,11 +314,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   Future<bool> blockingFetchAll() async {
-    authToken = await TokenWrapper.getToken();
-    RestClient.token = authToken;
+    await TokenWrapper.load();
     loaded = true;
-    debugPrint("blockingFetchAll: auth token: $authToken");
-    if (authToken == null) {
+    //debugPrint("blockingFetchAll: auth token: ${TokenWrapper.token}");
+    if (TokenWrapper.token == null) {
       setStateHaveRegistration();
       return true;
     }
@@ -435,7 +446,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           secondary: Icon(Icons.notifications),
           value: Data.preferences.notificationsToApp,
           onChanged: (val) {
-            Data.toggleNotificationsAndThen((String err) {
+            Data.toggleNotificationsAndThen(
+                then: (String err) {
               setState(() {});
               if (err != null) {
                 showDialogWithText(context, err, () {
@@ -640,7 +652,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       body: ListView(
         children: <Widget>[
           SizedBox(height: screenWidth * 0.05),
-          imgBlock('pomuzemesi_phone'),
+          imgBlock('pomuzemesi_laptop'),
           ListTile(
             title: Text(
                 'Pro spuštění této aplikace musíte mít registraci na www.pomuzeme.si - pokud ji ještě nemáte, nejdříve se tam zaregistrujte.'),
@@ -660,7 +672,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       fcmToken = firebaseToken;
       print("Firebase token: $firebaseToken");
     });
-    debugPrint("build: auth token: $authToken");
+    debugPrint("build: auth token: ${TokenWrapper.token}");
     return Scaffold(
         body: Form(
       key: _formEnterPhoneKey,
@@ -791,7 +803,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     firebaseMessaging.getToken().then((firebaseToken) {
       print("Firebase token: $firebaseToken");
     });
-    debugPrint("build: auth token: $authToken");
+    debugPrint("build: auth token: ${TokenWrapper.token}");
     screenWidth = MediaQuery.of(context).size.width;
     CardBuilder.setScreenWidth(screenWidth);
     Widget body;
@@ -852,7 +864,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     onPressed: () {
                       homePageState = HomePageState.enterPhone;
                       //registrationDone = false;
-                      authToken = null;
+                      TokenWrapper.token = null;
                       phoneNumber = null;
                       controllerPhoneNumber.text = '';
                       controllerSMS.text = '';

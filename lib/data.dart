@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:pomuzemesi/db.dart';
 import 'package:pomuzemesi/misc.dart';
 import 'package:intl/intl.dart';
+import 'package:jaguar_jwt/jaguar_jwt.dart';
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -75,9 +77,10 @@ class Data {
     return true;
   }
 
-  static void toggleNotificationsAndThen(Function(String) fn) async {
+  static void toggleNotificationsAndThen(
+      {bool setValue, Function(String) then}) async {
     bool current = preferences.notificationsToApp;
-    bool newSetting = !current;
+    bool newSetting = (setValue == null) ? (!current) : setValue;
     String err;
     try {
       await RestClient.setNotificationsToApp(newSetting);
@@ -89,8 +92,8 @@ class Data {
         err = e.cause;
       }
     }
-    if (fn != null) {
-      fn(err);
+    if (then != null) {
+      then(err);
     }
   }
 
@@ -217,6 +220,10 @@ class Data {
 }
 
 class TokenWrapper {
+  static String token;
+  static int BACKOFF_SECONDS = 3600;
+  static int tsLastTimeTriedToRefresh = 0;
+
   // Returns null if not set.
   static Future<String> getToken() async {
     DbRecord r = await DbRecords.getRecord(Data.KEY_TOKEN);
@@ -226,9 +233,52 @@ class TokenWrapper {
     return r.recString;
   }
 
-  static Future<bool> setToken(String token) async {
-    await DbRecords.saveString(
-        key: Data.KEY_TOKEN, value: token, ts: millisNow());
+  static void saveToken(String t) {
+    token = t;
+    setToken(t);
+  }
+
+  static Future<bool> load() async {
+    token = await getToken();
     return true;
+  }
+
+  static Future<bool> setToken(String t) async {
+    token = t;
+    await DbRecords.saveString(key: Data.KEY_TOKEN, value: t, ts: millisNow());
+    return true;
+  }
+
+  static int tokenValidSeconds(String token) {
+    // {"volunteer_id":2,"exp":1588332040}
+    try {
+      final parts = token.split('.');
+      final payload = parts[1];
+      final String decodedToken = B64urlEncRfc7515.decodeUtf8(payload);
+      debugPrint("TOKEN: $decodedToken");
+      var r = json.decode(decodedToken);
+      int expiration = r['exp'];
+      int secondsNow = (millisNow() / 1000.0).toInt();
+      return expiration - secondsNow;
+    } catch (e) {
+      debugPrint("Failed to parse token: ${e.toString()}");
+    }
+    return null;
+  }
+
+  static void maybeTryToRefresh() async {
+    int secondsNow = (millisNow() / 1000.0).toInt();
+    int secondsSinceLastAttempt = secondsNow - tsLastTimeTriedToRefresh;
+    debugPrint(
+        "secondsSinceLastAttempt: $secondsSinceLastAttempt, BACKOFF_SECONDS: $BACKOFF_SECONDS");
+    if (secondsSinceLastAttempt < BACKOFF_SECONDS) {
+      debugPrint(
+          "Will not try to refresh now, too early, will try in ${BACKOFF_SECONDS - secondsSinceLastAttempt} seconds.");
+      return;
+    }
+    debugPrint("WILL TRY TO REFRESH TOKEN");
+    tsLastTimeTriedToRefresh = secondsNow;
+    String t = await RestClient.refreshToken();
+    saveToken(t);
   }
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 
-// TODO create an actual mailbox
-String FEEDBACK_MAILBOX = 'test@example.com';
+// TODO this may want its own mailbox?
+String FEEDBACK_MAILBOX = 'info@pomuzeme.si';
 
 //Color PRIMARY_COLOR = Color(0xff64cde3);
 Color PRIMARY_COLOR = Color(0xff6ecee1);
@@ -25,6 +25,8 @@ double LEFT_OF_TEXT_BLOCK = 0.04;
 
 // 10s. Basic time between polls, will exponentially increase on failures.
 double STALENESS_LIMIT_MS = 10.0 * 1000;
+// If the authToken is expiring in less than 3 days, refresh it.
+int REFRESH_TOKEN_BEFORE = 3600 * 24 * 3;
 
 int millisNow() {
   return DateTime.now().toUtc().millisecondsSinceEpoch;
