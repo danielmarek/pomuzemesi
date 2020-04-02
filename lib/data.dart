@@ -77,9 +77,10 @@ class Data {
     return true;
   }
 
-  static void toggleNotificationsAndThen(Function(String) fn) async {
+  static void toggleNotificationsAndThen(
+      {bool setValue, Function(String) then}) async {
     bool current = preferences.notificationsToApp;
-    bool newSetting = !current;
+    bool newSetting = (setValue == null) ? (!current) : setValue;
     String err;
     try {
       await RestClient.setNotificationsToApp(newSetting);
@@ -91,8 +92,8 @@ class Data {
         err = e.cause;
       }
     }
-    if (fn != null) {
-      fn(err);
+    if (then != null) {
+      then(err);
     }
   }
 
@@ -233,8 +234,8 @@ class TokenWrapper {
   }
 
   static void saveToken(String t) {
-    setToken(t);
     token = t;
+    setToken(t);
   }
 
   static Future<bool> load() async {
@@ -244,12 +245,11 @@ class TokenWrapper {
 
   static Future<bool> setToken(String t) async {
     token = t;
-    await DbRecords.saveString(
-        key: Data.KEY_TOKEN, value: t, ts: millisNow());
+    await DbRecords.saveString(key: Data.KEY_TOKEN, value: t, ts: millisNow());
     return true;
   }
 
-  static int tokenValidSeconds(String token){
+  static int tokenValidSeconds(String token) {
     // {"volunteer_id":2,"exp":1588332040}
     try {
       final parts = token.split('.');
@@ -269,7 +269,8 @@ class TokenWrapper {
   static void maybeTryToRefresh() async {
     int secondsNow = (millisNow() / 1000.0).toInt();
     int secondsSinceLastAttempt = secondsNow - tsLastTimeTriedToRefresh;
-    debugPrint("secondsSinceLastAttempt: $secondsSinceLastAttempt, BACKOFF_SECONDS: $BACKOFF_SECONDS");
+    debugPrint(
+        "secondsSinceLastAttempt: $secondsSinceLastAttempt, BACKOFF_SECONDS: $BACKOFF_SECONDS");
     if (secondsSinceLastAttempt < BACKOFF_SECONDS) {
       debugPrint(
           "Will not try to refresh now, too early, will try in ${BACKOFF_SECONDS - secondsSinceLastAttempt} seconds.");

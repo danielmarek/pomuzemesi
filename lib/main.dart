@@ -109,6 +109,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   String lastExplicitRefreshError;
   double backoffTime = 10.0;
   Random random = Random();
+  bool showNotificationsPreset = false;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -249,14 +250,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       if (pollingTimer == null) {
         startPollingTimer();
       }
+      if (showNotificationsPreset) {
+        showDialogWithText(context, "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.", null);
+      }
     });
-    // TODO first info about firebase message preferences.
-    /*getPrefsThenBuild().then((_) {
-      showDialogWithText(
-          context,
-          "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.",
-          () {});
-    });*/
   }
 
   /*void setStateUploadProfile() {
@@ -279,7 +276,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     try {
       String t = await RestClient.sessionCreate(phoneNumber, smsCode);
       TokenWrapper.saveToken(t);
-      setStateBlockingFetchAll();
+      Data.toggleNotificationsAndThen(
+        setValue: true,
+        then: (_) {
+          showNotificationsPreset = true;
+          setStateBlockingFetchAll();
+        }
+      );
     } on APICallException catch (e) {
       if (e.errorCode == 401) {
         setStateEnterSMS().then((_) {
@@ -443,7 +446,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           secondary: Icon(Icons.notifications),
           value: Data.preferences.notificationsToApp,
           onChanged: (val) {
-            Data.toggleNotificationsAndThen((String err) {
+            Data.toggleNotificationsAndThen(
+                then: (String err) {
               setState(() {});
               if (err != null) {
                 showDialogWithText(context, err, () {
