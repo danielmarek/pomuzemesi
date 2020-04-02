@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 
-// TODO create an actual mailbox
-String FEEDBACK_MAILBOX = 'test@example.com';
+// TODO this may want its own mailbox?
+String FEEDBACK_MAILBOX = 'info@pomuzeme.si';
 
 //Color PRIMARY_COLOR = Color(0xff64cde3);
 Color PRIMARY_COLOR = Color(0xff6ecee1);
