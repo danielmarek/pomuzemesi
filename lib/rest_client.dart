@@ -1,12 +1,12 @@
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:pomuzemesi/data.dart';
 import 'dart:convert';
 import 'dart:io';
 
 import 'model.dart';
 
 // TODO distinguish between different non-200s
-// 426: upgrade required
 
 class APICallException implements Exception {
   static String UNAUTHORIZED = 'UNAUTHORIZED';
@@ -35,7 +35,7 @@ class APICallException implements Exception {
 
 class RestClient {
   static String BASE_URL = "https://pomuzeme-si-mobile-api.herokuapp.com";
-  static String token;
+  //static String token;
   static http.Client httpClient = new http.Client();
 
 /*
@@ -48,6 +48,10 @@ class RestClient {
     debugPrint("response headers:\n${response.headers}");
     debugPrint("response body:\n${response.body}");
   }*/
+
+  static Map<String, String> authHeaders() {
+    return {'Authorization': 'Bearer ${TokenWrapper.token}'};
+  }
 
   static Future<String> _call(
       {@required Function fn,
@@ -123,7 +127,24 @@ class RestClient {
       url:
           'api/v1/session/create?phone_number=$phone&sms_verification_code=$code',
     );
-    String token;
+    try {
+      var r = json.decode(body);
+      return r['token'];
+    } catch (_) {
+      throw APICallException(
+        errorCode: -3,
+        errorKey: APICallException.PARSING_ERROR,
+        cause: 'Nepodařilo se zpracovat odpověď od serveru.',
+      );
+    }
+  }
+
+  static Future<String> refreshToken() async {
+    String body = await _call(
+      fn: httpClient.post,
+      url: 'api/v1/session/refresh',
+      headers: authHeaders(),
+    );
     try {
       var r = json.decode(body);
       return r['token'];
@@ -140,7 +161,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.get,
       url: 'api/v1/volunteer/preferences',
-      headers: {'Authorization': 'Bearer $token'},
+      headers: authHeaders(),
     );
     return body;
   }
@@ -149,7 +170,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.get,
       url: 'api/v1/volunteer/profile',
-      headers: {'Authorization': 'Bearer $token'},
+      headers: authHeaders(),
     );
     return body;
   }
@@ -159,7 +180,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.put,
       url: 'api/v1/volunteer/preferences?notifications_to_app=$value',
-      headers: {'Authorization': 'Bearer $token'},
+      headers: authHeaders(),
     );
     return true;
   }
@@ -173,7 +194,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.get,
       url: 'api/v1/volunteer/requests',
-      headers: {'Authorization': 'Bearer $token'},
+      headers: authHeaders(),
     );
     return body;
   }
@@ -183,7 +204,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.post,
       url: 'api/v1/volunteer/requests/$id/respond?accept=$acceptStr',
-      headers: {'Authorization': 'Bearer $token'},
+      headers: authHeaders(),
     );
     return true;
   }
@@ -192,7 +213,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.get,
       url: 'api/v1/volunteer/organisations',
-      headers: {'Authorization': 'Bearer $token'},
+      headers: authHeaders(),
     );
     try {
       return Organisation.listFromRawJson(body);
@@ -209,7 +230,7 @@ class RestClient {
     String body = await _call(
       fn: httpClient.get,
       url: 'api/v1/organisations',
-      headers: {'Authorization': 'Bearer $token'},
+      headers: authHeaders(),
     );
     try {
       return Organisation.listFromRawJson(body);

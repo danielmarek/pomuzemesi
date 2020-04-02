@@ -90,7 +90,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   TextEditingController controllerPhoneNumber = new TextEditingController();
   TextEditingController controllerSMS = new TextEditingController();
 
-  String fcmToken, authToken, phoneNumber;
+  String fcmToken, phoneNumber;
   bool loaded = false;
 
   //bool registrationDone = false;
@@ -154,6 +154,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void timerTick() async {
+    int tokenValidSeconds = TokenWrapper.tokenValidSeconds(TokenWrapper.token);
+    debugPrint("TOKEN VALID FOR: $tokenValidSeconds s");
+    if (tokenValidSeconds < REFRESH_TOKEN_BEFORE) {
+      TokenWrapper.maybeTryToRefresh();
+      return;
+    }
+
     bool inForeground = isInForeground(_appLifecycleState);
     debugPrint("Timer tick, inForeground: $inForeground");
     if (inForeground) {
@@ -267,9 +274,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   void submitSMSCode(String smsCode) async {
     try {
-      authToken = await RestClient.sessionCreate(phoneNumber, smsCode);
-      RestClient.token = authToken;
-      await TokenWrapper.setToken(authToken);
+      String t = await RestClient.sessionCreate(phoneNumber, smsCode);
+      TokenWrapper.saveToken(t);
       setStateBlockingFetchAll();
     } on APICallException catch (e) {
       if (e.errorCode == 401) {
@@ -302,11 +308,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   Future<bool> blockingFetchAll() async {
-    authToken = await TokenWrapper.getToken();
-    RestClient.token = authToken;
+    await TokenWrapper.load();
     loaded = true;
-    debugPrint("blockingFetchAll: auth token: $authToken");
-    if (authToken == null) {
+    //debugPrint("blockingFetchAll: auth token: ${TokenWrapper.token}");
+    if (TokenWrapper.token == null) {
       setStateHaveRegistration();
       return true;
     }
@@ -660,7 +665,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       fcmToken = firebaseToken;
       print("Firebase token: $firebaseToken");
     });
-    debugPrint("build: auth token: $authToken");
+    debugPrint("build: auth token: ${TokenWrapper.token}");
     return Scaffold(
         body: Form(
       key: _formEnterPhoneKey,
@@ -791,7 +796,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     firebaseMessaging.getToken().then((firebaseToken) {
       print("Firebase token: $firebaseToken");
     });
-    debugPrint("build: auth token: $authToken");
+    debugPrint("build: auth token: ${TokenWrapper.token}");
     screenWidth = MediaQuery.of(context).size.width;
     CardBuilder.setScreenWidth(screenWidth);
     Widget body;
@@ -852,7 +857,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     onPressed: () {
                       homePageState = HomePageState.enterPhone;
                       //registrationDone = false;
-                      authToken = null;
+                      TokenWrapper.token = null;
                       phoneNumber = null;
                       controllerPhoneNumber.text = '';
                       controllerSMS.text = '';

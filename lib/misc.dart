@@ -25,6 +25,8 @@ double LEFT_OF_TEXT_BLOCK = 0.04;
 
 // 10s. Basic time between polls, will exponentially increase on failures.
 double STALENESS_LIMIT_MS = 10.0 * 1000;
+// If the authToken is expiring in less than 3 days, refresh it.
+int REFRESH_TOKEN_BEFORE = 3600 * 24 * 3;
 
 int millisNow() {
   return DateTime.now().toUtc().millisecondsSinceEpoch;
