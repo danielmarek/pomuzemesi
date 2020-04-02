@@ -154,6 +154,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void timerTick() async {
+    if (homePageState != HomePageState.ready) {
+      return;
+    }
     int tokenValidSeconds = TokenWrapper.tokenValidSeconds(TokenWrapper.token);
     debugPrint("TOKEN VALID FOR: $tokenValidSeconds s");
     if (tokenValidSeconds < REFRESH_TOKEN_BEFORE) {
@@ -645,7 +648,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       body: ListView(
         children: <Widget>[
           SizedBox(height: screenWidth * 0.05),
-          imgBlock('pomuzemesi_phone'),
+          imgBlock('pomuzemesi_laptop'),
           ListTile(
             title: Text(
                 'Pro spuštění této aplikace musíte mít registraci na www.pomuzeme.si - pokud ji ještě nemáte, nejdříve se tam zaregistrujte.'),
