@@ -79,8 +79,13 @@ class Data {
 
   static void toggleNotificationsAndThen(
       {bool setValue, Function(String) then}) async {
-    bool current = preferences.notificationsToApp;
-    bool newSetting = (setValue == null) ? (!current) : setValue;
+    bool newSetting;
+    if (setValue == null) {
+      bool current = preferences.notificationsToApp;
+      newSetting = !current;
+    } else {
+      newSetting = setValue;
+    }
     String err;
     try {
       await RestClient.setNotificationsToApp(newSetting);
@@ -133,7 +138,7 @@ class Data {
     List<Request> accepted = List<Request>();
     List<Request> rejected = List<Request>();
     List<Request> pending = List<Request>();
-    for (Request r in allRequests) {
+    for (Request r in allRequests.reversed) {
       //debugPrint('myState: ${r.myState}');
       if (r.myState == 'accepted') {
         accepted.add(r);

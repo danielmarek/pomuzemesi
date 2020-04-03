@@ -5,7 +5,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:loading_animations/loading_animations.dart';
 
 import 'dart:async';
@@ -251,7 +250,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         startPollingTimer();
       }
       if (showNotificationsPreset) {
-        showDialogWithText(context, "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.", null);
+        showDialogWithText(
+            context,
+            "Notifikace Vám od teď budou chodit do aplikace místo SMS. V nastavení toto můžete změnit.",
+            null);
       }
     });
   }
@@ -277,12 +279,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       String t = await RestClient.sessionCreate(phoneNumber, smsCode);
       TokenWrapper.saveToken(t);
       Data.toggleNotificationsAndThen(
-        setValue: true,
-        then: (_) {
-          showNotificationsPreset = true;
-          setStateBlockingFetchAll();
-        }
-      );
+          setValue: true,
+          then: (_) {
+            showNotificationsPreset = true;
+            setStateBlockingFetchAll();
+          });
     } on APICallException catch (e) {
       if (e.errorCode == 401) {
         setStateEnterSMS().then((_) {
@@ -446,8 +447,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           secondary: Icon(Icons.notifications),
           value: Data.preferences.notificationsToApp,
           onChanged: (val) {
-            Data.toggleNotificationsAndThen(
-                then: (String err) {
+            Data.toggleNotificationsAndThen(then: (String err) {
               setState(() {});
               if (err != null) {
                 showDialogWithText(context, err, () {
@@ -461,12 +461,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void sendFeedback() async {
-    final Email email = Email(
-      subject: 'Zpětná vazba na Pomůžeme.si',
-      body: 'Toto si myslím o Pomůžeme.si a/nebo této mobilní aplikaci: ',
-      recipients: [FEEDBACK_MAILBOX],
-    );
-    await FlutterEmailSender.send(email);
+    sendEmailTo(context, FEEDBACK_MAILBOX);
   }
 
   Widget aboutBody() {
@@ -483,7 +478,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       SizedBox(height: screenWidth * 0.05),
       ListTile(
         title: Text(
-            "Máte pro nás zpětnou vazbu? Pošlete nám ji, ať můžeme aplikaci vylepšit."),
+            "Máte pro nás zpětnou vazbu? Pošlete nám ji na $FEEDBACK_MAILBOX, ať můžeme aplikaci vylepšit."),
       ),
       SizedBox(height: screenWidth * 0.05),
       buttonListTile("Odeslat zpětnou vazbu", screenWidth, () {
