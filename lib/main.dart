@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_animations/loading_animations.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'dart:async';
 import 'dart:math';
@@ -468,12 +469,20 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     return ListView(children: <Widget>[
       ExpansionTile(
         title: Text("O aplikaci"),
-        children: textWithPadding(["Vytvořeno v březnu 2020."], screenWidth),
+        children: textWithPadding([
+          "Vytvořeno v březnu-dubnu 2020 v rámci pomoci potřebným v souvislosti s pandemií Covid-19."], screenWidth),
       ),
-      ExpansionTile(
+      ListTile(
+        title: Text("Podmínky užívání"),
+        onTap: () {
+          launch("https://pomuzeme.si/podminky_dobrovolnika_pomuzemesi.pdf");
+        },
+      ),
+      ListTile(
         title: Text("Privacy Policy"),
-        children:
-            textWithPadding(["TODO: Přidat privacy policy."], screenWidth),
+        onTap: () {
+          launch("https://pomuzeme.si/podminky_ochrany_osobnich_udaju_pomuzemesi.pdf");
+        },
       ),
       SizedBox(height: screenWidth * 0.05),
       ListTile(
