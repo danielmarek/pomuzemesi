@@ -3,11 +3,7 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pomuzemesi/task_detail_page.dart';
-
-//import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:maps_launcher/maps_launcher.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
 import 'misc.dart';
@@ -140,7 +136,7 @@ Widget buttonListTile(String text, double screenWidth, Function onPressed,
     {MyButtonStyle myButtonStyle = MyButtonStyle.normal}) {
   return Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
     myButton(text, screenWidth, onPressed,
-        style: myButtonStyle, widthFraction: 0.6)
+        style: myButtonStyle, widthFraction: 0.7)
   ]);
 }
 
@@ -178,60 +174,6 @@ void showDialogWithText(BuildContext context, String title, Function fn) async {
       fn();
     }
   });
-}
-/*
-SmartRefresher refresher({
-  @required RefreshController controller,
-  @required Function onRefresh,
-  @required Function onLoading,
-  @required int itemCount,
-  @required Function(BuildContext, int) cardBuilder,
-}) {
-  return SmartRefresher(
-    enablePullDown: true,
-    enablePullUp: true,
-    header: WaterDropHeader(),
-    footer: CustomFooter(
-      builder: (BuildContext context, LoadStatus mode) {
-        Widget body;
-        if (mode == LoadStatus.idle) {
-          body = Text("pull up load");
-        } else if (mode == LoadStatus.loading) {
-          body = Text('loading ...'); //CupertinoActivityIndicator();
-        } else if (mode == LoadStatus.failed) {
-          body = Text("Load Failed!Click retry!");
-        } else if (mode == LoadStatus.canLoading) {
-          body = Text("release to load more");
-        } else {
-          body = Text("No more Data");
-        }
-        return Container(
-          height: 55.0,
-          child: Center(child: body),
-        );
-      },
-    ),
-    controller: controller,
-    onRefresh: onRefresh,
-    onLoading: onLoading,
-    child: ListView.builder(
-      itemBuilder: cardBuilder, //requestToCard,
-      //itemBuilder: (c, i) => Card(child: Center(child: Text(items[i]))),
-      itemExtent: 100.0,
-      //itemCount: items.length,
-      itemCount:
-          itemCount, //Data2.requests != null ? Data2.requests.length : 0,
-    ),
-  );
-}*/
-
-void sendEmailTo(String recipient) async {
-  final Email email = Email(
-    subject: 'Dobrý den',
-    body: 'Dobrý den, ',
-    recipients: [recipient],
-  );
-  await FlutterEmailSender.send(email);
 }
 
 Widget myDivider(double screenWidth) {
@@ -343,7 +285,7 @@ class CardBuilder {
   }
 
   static List<Widget> contactButtons(
-      String email, String phone, String address) {
+      BuildContext context, String email, String phone, String address) {
     debugPrint("contactButtons: $email, $phone, $address");
     if (email == null && phone == null && address == null) {
       return <Widget>[];
@@ -351,30 +293,31 @@ class CardBuilder {
     List<Widget> l = List<Widget>();
     if (phone != null) {
       l.add(myButton('Volat', screenWidth, () {
-        launch("tel:$phone");
-      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+        openPhoneCallTo(context, phone);
+      }, style: MyButtonStyle.blue, widthFraction: 0.25));
       if (l.length > 0) {
         l.add(SizedBox(width: screenWidth * 0.02));
       }
       l.add(myButton('SMS', screenWidth, () {
-        launch("sms:$phone");
-      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+        sendSmsTo(context, phone);
+      }, style: MyButtonStyle.blue, widthFraction: 0.25));
     }
     if (email != null) {
       if (l.length > 0) {
         l.add(SizedBox(width: screenWidth * 0.02));
       }
       l.add(myButton('E-mail', screenWidth, () {
-        sendEmailTo(email);
-      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+        sendEmailTo(context, email);
+      }, style: MyButtonStyle.blue, widthFraction: 0.25));
     }
+
     if (address != null) {
       if (l.length > 0) {
         l.add(SizedBox(width: screenWidth * 0.02));
       }
       l.add(myButton('Mapa', screenWidth, () {
         MapsLauncher.launchQuery(address);
-      }, style: MyButtonStyle.blue, widthFraction: 0.22));
+      }, style: MyButtonStyle.blue, widthFraction: 0.25));
     }
     return <Widget>[
       Row(mainAxisAlignment: MainAxisAlignment.start, children: l)
@@ -385,6 +328,7 @@ class CardBuilder {
       {@required Request request,
       @required String title,
       @required TextStyle topTextStyle,
+      @required BuildContext context,
       String email,
       fullName,
       phone,
@@ -422,7 +366,7 @@ class CardBuilder {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: contactItems)),
           ] +
-          contactButtons(email, phone, address));
+          contactButtons(context, email, phone, address));
     }
     return l;
   }
@@ -438,10 +382,11 @@ class CardBuilder {
         myButton('Přijmout', screenWidth, onAccept, widthFraction: 0.35);
 
     List<Widget> widgets;
-    if (request.myState == 'pending_notification') {
+    if (request.myState == 'pending_notification' ||
+        request.myState == 'notified') {
       widgets = <Widget>[
         reject,
-        SizedBox(width: screenWidth * 0.05),
+        SizedBox(width: screenWidth * 0.02),
         accept,
       ];
     } else if (request.myState == 'rejected') {
@@ -459,6 +404,21 @@ class CardBuilder {
     ]);
     l.add(Row(mainAxisAlignment: MainAxisAlignment.end, children: widgets));
     return l;
+  }
+
+  static Function(BuildContext, Animation<double>, HeroFlightDirection,
+      BuildContext, BuildContext) _flightShuttleBuilder() {
+    return (
+      BuildContext flightContext,
+      Animation<double> animation,
+      HeroFlightDirection flightDirection,
+      BuildContext fromHeroContext,
+      BuildContext toHeroContext,
+    ) {
+      return SingleChildScrollView(
+        child: fromHeroContext.widget,
+      );
+    };
   }
 
   static Widget buildCard({
@@ -503,6 +463,7 @@ class CardBuilder {
       widgets.addAll(searchingVolunteersWidgets(request: request) +
           descriptionWidgets(request: request) +
           contactWidgets(
+            context: context,
             request: request,
             title: 'Koordinátor',
             email: request.coordinatorEmail,
@@ -511,6 +472,7 @@ class CardBuilder {
             topTextStyle: tsCardTop,
           ) +
           contactWidgets(
+            context: context,
             request: request,
             title: 'Odběratel',
             fullName: request.subscriber,
@@ -569,33 +531,37 @@ class CardBuilder {
     if (isDetail) {
       result = Card(child: content);
     } else {
-
-          result = Card(
-              child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailPage(
-                          title: "Detail úkolu",
-                          request: request,
-                          cameFrom: cameFrom,
-                        ),
-                      ),
-                    ).then((_) {
-                      onReturn();
-                    });
-                  },
-                  child: content));
+      result = Card(
+          child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailPage(
+                      title: "Detail úkolu",
+                      request: request,
+                      cameFrom: cameFrom,
+                    ),
+                  ),
+                ).then((_) {
+                  onReturn();
+                });
+              },
+              child: content));
     }
     if (bland) {
-      return Hero(tag: 'request_$requestID', child: Opacity(
-          opacity: 0.35,
-          child: result));
+      return Hero(
+          tag: 'request_$requestID',
+          //flightShuttleBuilder: _flightShuttleBuilder(),
+          child: Material(
+              type: MaterialType.transparency,
+              child: Opacity(opacity: 0.35, child: result)));
     } else {
-      return Hero(tag: 'request_$requestID', child: result);
+      return Hero(
+          tag: 'request_$requestID',
+          //flightShuttleBuilder: _flightShuttleBuilder(),
+          child: Material(type: MaterialType.transparency, child: result));
     }
-
   }
 }
 

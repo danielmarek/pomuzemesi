@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:pomuzemesi/widget_misc.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'dart:io';
 
 // TODO this may want its own mailbox?
@@ -66,4 +69,38 @@ int daysFromNow(DateTime date) {
   return DateTime(date.year, date.month, date.day)
       .difference(DateTime(now.year, now.month, now.day))
       .inDays;
+}
+
+void sendEmailTo(BuildContext context, String recipient) async {
+  String url = "mailto:$recipient";
+  debugPrint("sendEmailTo, $url");
+  if (await canLaunch(url)) {
+    await launch(url);
+  } else {
+    showDialogWithText(
+        context,
+        "Nepodařilo se otevřít e-mailovou aplikaci. Máte ji nainstalovanou a nastavenou?",
+        null);
+  }
+}
+
+void sendSmsTo(BuildContext context, String phone) async {
+  String url = "sms:$phone";
+  debugPrint("sendSmsTo, $url");
+  if (await canLaunch(url)) {
+    await launch(url);
+  } else {
+    showDialogWithText(context, "Nepodařilo se otevřít SMS aplikaci.", null);
+  }
+}
+
+void openPhoneCallTo(BuildContext context, String phone) async {
+  String url = "tel:$phone";
+  debugPrint("openPhoneCallTo, $url");
+  if (await canLaunch(url)) {
+    await launch(url);
+  } else {
+    showDialogWithText(
+        context, "Nepodařilo se otevřít telefonní aplikaci.", null);
+  }
 }
