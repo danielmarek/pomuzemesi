@@ -208,14 +208,14 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     return true;
   }
 
-  void setStateWaitForSMS() async {
+  void setStateWaitForSMS({bool manualRetry = false}) async {
     setState(() {
       homePageState = HomePageState.waitForSMS;
     });
-    askForSMS();
+    askForSMS(manualRetry: manualRetry);
   }
 
-  void askForSMS() async {
+  void askForSMS({bool manualRetry = false}) async {
     try {
       // TODO: captcha token.
       await RestClient.sessionNew(phoneNumber, 'foobar', fcmToken);
@@ -229,9 +229,15 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               null);
         });
       } else {
-        setStateEnterPhone().then((_) {
-          showDialogWithText(context, e.cause, null);
-        });
+        if (e.errorKey == APICallException.CONNECTION_FAILED && manualRetry) {
+          setStateEnterSMS().then((_) {
+            showDialogWithText(context, e.cause, null);
+          });
+        } else {
+          setStateEnterPhone().then((_) {
+            showDialogWithText(context, e.cause, null);
+          });
+        }
       }
     }
   }
@@ -710,7 +716,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           buttonListTile("Získat ověřovací SMS", screenWidth, () {
             if (_formEnterPhoneKey.currentState.validate()) {
               phoneNumber = controllerPhoneNumber.text;
-              setStateWaitForSMS();
+              setStateWaitForSMS(manualRetry: false);
             }
           }),
         ],
@@ -776,7 +782,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             title: Text('Nepřišla Vám SMS?'),
           ),
           buttonListTile("Odeslat novou SMS", screenWidth, () {
-            setStateWaitForSMS();
+            setStateWaitForSMS(manualRetry: true);
           }, myButtonStyle: MyButtonStyle.light),
           /*buttonListTile("Ověřit (TEST nemám registraci)", screenWidth, () {
             if (_formEnterSMSKey.currentState.validate()) {
