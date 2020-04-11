@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:pomuzemesi/misc.dart';
 
 import 'dart:io';
 
+import 'analytics.dart';
 import 'model.dart';
 import 'rest_client.dart';
 import 'widget_misc.dart';
@@ -44,9 +47,21 @@ class _DetailPageState extends State<DetailPage> {
     String err = await respondToTask(true);
     if (err == null) {
       Navigator.of(context).pop();
+      Fluttertoast.showToast(
+          msg: "Poptávka byla přesunuta do úkolů",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: SECONDARY_COLOR,
+          textColor: Colors.white,
+          fontSize: screenWidth * 0.04);
     } else {
-      showDialogWithText(context, err, (){});
+      showDialogWithText(context, err, () {});
     }
+
+    OurAnalytics.logEvent(
+        name: OurAnalytics.ACCEPT_REQUEST,
+        parameters: {'success': err == null});
   }
 
   void declineTask() async {
@@ -54,8 +69,12 @@ class _DetailPageState extends State<DetailPage> {
     if (err == null) {
       Navigator.of(context).pop();
     } else {
-      showDialogWithText(context, err, (){});
+      showDialogWithText(context, err, () {});
     }
+
+    OurAnalytics.logEvent(
+        name: OurAnalytics.DECLINE_REQUEST,
+        parameters: {'success': err == null});
   }
 
   @override

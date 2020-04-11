@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:pomuzemesi/task_detail_page.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 
+import 'analytics.dart';
 import 'data.dart';
+import 'main.dart';
 import 'misc.dart';
 import 'model.dart';
 
@@ -284,8 +286,8 @@ class CardBuilder {
     return l;
   }
 
-  static List<Widget> contactButtons(
-      BuildContext context, String email, String phone, String address) {
+  static List<Widget> contactButtons(BuildContext context, String email,
+      String phone, String address, String recipientKind) {
     debugPrint("contactButtons: $email, $phone, $address");
     if (email == null && phone == null && address == null) {
       return <Widget>[];
@@ -293,13 +295,13 @@ class CardBuilder {
     List<Widget> l = List<Widget>();
     if (phone != null) {
       l.add(myButton('Volat', screenWidth, () {
-        openPhoneCallTo(context, phone);
+        openPhoneCallTo(context, phone, recipientKind);
       }, style: MyButtonStyle.blue, widthFraction: 0.25));
       if (l.length > 0) {
         l.add(SizedBox(width: screenWidth * 0.02));
       }
       l.add(myButton('SMS', screenWidth, () {
-        sendSmsTo(context, phone);
+        sendSmsTo(context, phone, recipientKind);
       }, style: MyButtonStyle.blue, widthFraction: 0.25));
     }
     if (email != null) {
@@ -307,7 +309,7 @@ class CardBuilder {
         l.add(SizedBox(width: screenWidth * 0.02));
       }
       l.add(myButton('E-mail', screenWidth, () {
-        sendEmailTo(context, email);
+        sendEmailTo(context, email, recipientKind);
       }, style: MyButtonStyle.blue, widthFraction: 0.25));
     }
 
@@ -316,6 +318,7 @@ class CardBuilder {
         l.add(SizedBox(width: screenWidth * 0.02));
       }
       l.add(myButton('Mapa', screenWidth, () {
+        OurAnalytics.logEvent(name: OurAnalytics.OPEN_MAPS);
         MapsLauncher.launchQuery(address);
       }, style: MyButtonStyle.blue, widthFraction: 0.25));
     }
@@ -329,6 +332,7 @@ class CardBuilder {
       @required String title,
       @required TextStyle topTextStyle,
       @required BuildContext context,
+      @required String recipientKind,
       String email,
       fullName,
       phone,
@@ -366,7 +370,7 @@ class CardBuilder {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: contactItems)),
           ] +
-          contactButtons(context, email, phone, address));
+          contactButtons(context, email, phone, address, recipientKind));
     }
     return l;
   }
@@ -383,7 +387,8 @@ class CardBuilder {
 
     List<Widget> widgets;
     if (request.myState == 'pending_notification' ||
-        request.myState == 'notified') {
+        request.myState == 'notified' ||
+        request.myState == 'to_be_notified') {
       widgets = <Widget>[
         reject,
         SizedBox(width: screenWidth * 0.02),
@@ -470,6 +475,7 @@ class CardBuilder {
             fullName: request.formatCoordinatorFullName(),
             phone: request.coordinatorPhone,
             topTextStyle: tsCardTop,
+            recipientKind: OurAnalytics.RECIPIENT_COORDINATOR,
           ) +
           contactWidgets(
             context: context,
@@ -479,6 +485,7 @@ class CardBuilder {
             phone: request.subscriberPhone,
             address: request.getAddress(),
             topTextStyle: tsCardTopBrown,
+            recipientKind: OurAnalytics.RECIPIENT_SUBSCRIBER,
           ) +
           respondButtons(
             request: request,
@@ -531,18 +538,27 @@ class CardBuilder {
     if (isDetail) {
       result = Card(child: content);
     } else {
+      String routeName;
+      if (MyHomePageState.currentPage == HOME_PAGE) {
+        routeName = '/home/request';
+      } else {
+        routeName = '/${ROUTES[MyHomePageState.currentPage]}/request';
+      }
+
       result = Card(
           child: InkWell(
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DetailPage(
-                      title: "Detail úkolu",
-                      request: request,
-                      cameFrom: cameFrom,
-                    ),
-                  ),
+                      builder: (context) => DetailPage(
+                            title: "Detail úkolu",
+                            request: request,
+                            cameFrom: cameFrom,
+                          ),
+                      settings: RouteSettings(
+                        name: routeName,
+                      )),
                 ).then((_) {
                   onReturn();
                 });

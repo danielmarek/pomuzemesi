@@ -50,9 +50,6 @@ class Request {
   final String title;
   final String shortDescription;
   final String longDescription;
-
-  final String city;
-  final String cityPart;
   final Address address;
 
   final int organisationID;
@@ -76,8 +73,6 @@ class Request {
       this.title,
       this.shortDescription,
       this.longDescription,
-      this.city,
-      this.cityPart,
       this.address,
       this.organisationID,
       this.fulfillmentDate,
@@ -107,8 +102,6 @@ class Request {
           r.containsKey('short_description') ? r['short_description'] : null,
       longDescription:
           r.containsKey('long_description') ? r['long_description'] : null,
-      city: r.containsKey('city') ? r['city'] : null,
-      cityPart: r.containsKey('city_part') ? r['city_part'] : null,
       address: (r.containsKey('address') && r['address'] != null)
           ? Address.fromParsedJson(r['address'])
           : null,
@@ -176,8 +169,11 @@ class Request {
   }
 
   String formatCityAndPart({bool upper = true}) {
-    String c = city;
-    String p = cityPart;
+    if (address == null) {
+      return upper ? 'Neurčené místo'.toUpperCase() : 'Neurčené místo';
+    }
+    String c = address.city;
+    String p = address.cityPart;
     if (c == null && p == null) {
       return upper ? 'Neurčené místo'.toUpperCase() : 'Neurčené místo';
     }
@@ -198,11 +194,14 @@ class Request {
     if (fulfillmentDate != null) {
       int daysFrom = daysFromNow(fulfillmentDate);
       if (daysFrom == 0) {
-        result = 'Dnes ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+        result =
+            'Dnes ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
       } else if (daysFrom == -1) {
-        result = 'Včera ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+        result =
+            'Včera ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
       } else if (daysFrom == 1) {
-        result = 'Zítra ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+        result =
+            'Zítra ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
       } else {
         result = DateFormat('dd. MM. kk:mm').format(fulfillmentDate.toLocal());
       }
