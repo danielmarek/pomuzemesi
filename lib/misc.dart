@@ -37,7 +37,10 @@ int millisNow() {
   return DateTime.now().toUtc().millisecondsSinceEpoch;
 }
 
-void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
+void firebaseCloudMessagingSetUpListeners(
+    FirebaseMessaging firebaseMessaging,
+    {Function (Map<String, dynamic> message) onResume}
+    ) {
   if (Platform.isIOS) iosPermission(firebaseMessaging);
 
   firebaseMessaging.getToken().then((token) {
@@ -48,9 +51,7 @@ void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging) {
     onMessage: (Map<String, dynamic> message) async {
       print('firebase: onMessage(): $message');
     },
-    onResume: (Map<String, dynamic> message) async {
-      print('firebase: onResume(): $message');
-    },
+    onResume: onResume,
     onLaunch: (Map<String, dynamic> message) async {
       print('firebase: onLaunch() $message');
     },

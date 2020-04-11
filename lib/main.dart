@@ -128,12 +128,20 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     _appLifecycleState = state;
   }
 
+  Future<dynamic> onFCMResume(Map<String, dynamic> message) {
+    print('firebase: onResume(): $message');
+    //Navigator.pushReplacementNamed(context, '/');
+  }
+
   @override
   void initState() {
     super.initState();
     currentPage = widget.tab;
     WidgetsBinding.instance.addObserver(this);
-    firebaseCloudMessagingSetUpListeners(firebaseMessaging);
+    firebaseCloudMessagingSetUpListeners(
+        firebaseMessaging,
+        onResume: onFCMResume,
+    );
     if (homePageState == null) {
       setStateBlockingFetchAll();
     }

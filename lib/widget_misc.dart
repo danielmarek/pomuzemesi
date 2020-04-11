@@ -387,7 +387,7 @@ class CardBuilder {
 
     List<Widget> widgets;
     if (request.myState == 'pending_notification' ||
-        request.myState == 'notified') {
+        request.myState == 'notified' || request.myState == 'to_be_notified') {
       widgets = <Widget>[
         reject,
         SizedBox(width: screenWidth * 0.02),

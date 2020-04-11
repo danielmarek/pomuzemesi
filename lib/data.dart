@@ -101,13 +101,10 @@ class Data {
     if (then != null) {
       then(err);
     }
-    OurAnalytics.logEvent(
-        name: OurAnalytics.TOGGLE_NOTIFICATIONS,
-        parameters: {
-          'success' : err == null,
-          'new_setting': newSetting,
-        }
-    );
+    OurAnalytics.logEvent(name: OurAnalytics.TOGGLE_NOTIFICATIONS, parameters: {
+      'success': err == null,
+      'new_setting': newSetting,
+    });
   }
 
   static int dataAge() {
@@ -152,7 +149,8 @@ class Data {
         accepted.add(r);
       } else if (r.myState == 'rejected') {
         rejected.add(r);
-      } else {
+      } else if (r.myState == 'pending_notification' ||
+          r.myState == 'notified' || r.myState == 'to_be_notified') {
         pending.add(r);
       }
     }
@@ -297,14 +295,11 @@ class TokenWrapper {
       String t = await RestClient.refreshToken();
       await saveToken(t);
       success = true;
-    } catch(e) {
+    } catch (e) {
       debugPrint('Failed to refresh token');
     }
-    OurAnalytics.logEvent(
-      name: OurAnalytics.TOKEN_REFRESH,
-      parameters: {
-        'success' : success,
-      }
-    );
+    OurAnalytics.logEvent(name: OurAnalytics.TOKEN_REFRESH, parameters: {
+      'success': success,
+    });
   }
 }
