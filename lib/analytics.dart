@@ -6,11 +6,15 @@ String ROUTE_NEW_REQUESTS = 'requests';
 String ROUTE_PROFILE = 'profile';
 String ROUTE_ABOUT = 'about';
 
-List<String> ROUTES = [ROUTE_HOME, ROUTE_NEW_REQUESTS, ROUTE_PROFILE, ROUTE_ABOUT];
+List<String> ROUTES = [
+  ROUTE_HOME,
+  ROUTE_NEW_REQUESTS,
+  ROUTE_PROFILE,
+  ROUTE_ABOUT
+];
 
 String EVENT_ACCEPT_REQUEST = 'accept_request';
 String EVENT_DECLINE_REQUEST = 'decline_request';
-
 
 class OurAnalytics {
   static FirebaseAnalytics instance;
@@ -34,7 +38,6 @@ class OurAnalytics {
   static String RECIPIENT_SUBSCRIBER = 'subscriber';
   static String RECIPIENT_DEVELOPER = 'developer';
   static String RECIPIENT_COORDINATOR = 'coordinator';
-
 
   static Future<void> logEvent(
       {@required String name, Map<String, dynamic> parameters}) async {

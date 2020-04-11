@@ -44,28 +44,28 @@ Widget _wrapWithBanner(Widget child) {
 }
 
 class PomuzemeSiApp extends StatelessWidget {
-  static FirebaseAnalytics analytics = OurAnalytics.instance = FirebaseAnalytics();
+  static FirebaseAnalytics analytics =
+      OurAnalytics.instance = FirebaseAnalytics();
   static FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorObservers: [
-        FirebaseAnalyticsObserver(analytics: analytics),
-      ],
-      title: 'Pomuzeme.si',
-      theme: ThemeData(
-        primarySwatch: Colors.cyan,
-      ),
-      home: MyHomePage(tab: HOME_PAGE),
-      initialRoute: '/',
-      routes: {
-        '/$ROUTE_NEW_REQUESTS' : (context) =>  MyHomePage(tab: REQUESTS_PAGE),
-        '/$ROUTE_PROFILE' : (context) =>  MyHomePage(tab: PROFILE_PAGE),
-        '/$ROUTE_ABOUT' : (context) =>  MyHomePage(tab: ABOUT_PAGE),
-      }
-    );
+        navigatorObservers: [
+          FirebaseAnalyticsObserver(analytics: analytics),
+        ],
+        title: 'Pomuzeme.si',
+        theme: ThemeData(
+          primarySwatch: Colors.cyan,
+        ),
+        home: MyHomePage(tab: HOME_PAGE),
+        initialRoute: '/',
+        routes: {
+          '/$ROUTE_NEW_REQUESTS': (context) => MyHomePage(tab: REQUESTS_PAGE),
+          '/$ROUTE_PROFILE': (context) => MyHomePage(tab: PROFILE_PAGE),
+          '/$ROUTE_ABOUT': (context) => MyHomePage(tab: ABOUT_PAGE),
+        });
   }
 }
 
@@ -83,6 +83,7 @@ enum HomePageState {
 
 class MyHomePage extends StatefulWidget {
   final int tab;
+
   MyHomePage({this.tab, Key key}) : super(key: key);
 
   @override
@@ -139,8 +140,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     currentPage = widget.tab;
     WidgetsBinding.instance.addObserver(this);
     firebaseCloudMessagingSetUpListeners(
-        firebaseMessaging,
-        onResume: onFCMResume,
+      firebaseMessaging,
+      onResume: onFCMResume,
     );
     if (homePageState == null) {
       setStateBlockingFetchAll();
@@ -269,11 +270,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       }
     }
     OurAnalytics.logEvent(
-        name: manualRetry ? OurAnalytics.RESEND_SMS_CODE : OurAnalytics.SUBMIT_PHONE_NUMBER,
+        name: manualRetry
+            ? OurAnalytics.RESEND_SMS_CODE
+            : OurAnalytics.SUBMIT_PHONE_NUMBER,
         parameters: {
-          'success' : success,
-        }
-    );
+          'success': success,
+        });
   }
 
   /*void setStateEnterRegistrationDetails() {
@@ -347,12 +349,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         });
       }
     }
-    OurAnalytics.logEvent(
-        name: OurAnalytics.SUBMIT_SMS_CODE,
-        parameters: {
-          'success' : success,
-        }
-    );
+    OurAnalytics.logEvent(name: OurAnalytics.SUBMIT_SMS_CODE, parameters: {
+      'success': success,
+    });
   }
 
   Future<bool> setStateBlockingFetchAll() async {
@@ -524,7 +523,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       ExpansionTile(
         title: Text("O aplikaci"),
         children: textWithPadding([
-          "Vytvořeno v březnu-dubnu 2020 v rámci pomoci potřebným v souvislosti s pandemií Covid-19."], screenWidth),
+          "Vytvořeno v březnu-dubnu 2020 v rámci pomoci potřebným v souvislosti s pandemií Covid-19."
+        ], screenWidth),
       ),
       ListTile(
         title: Text("Podmínky užívání"),
@@ -535,7 +535,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       ListTile(
         title: Text("Privacy Policy"),
         onTap: () {
-          launch("https://pomuzeme.si/podminky_ochrany_osobnich_udaju_pomuzemesi.pdf");
+          launch(
+              "https://pomuzeme.si/podminky_ochrany_osobnich_udaju_pomuzemesi.pdf");
         },
       ),
       SizedBox(height: screenWidth * 0.05),
@@ -719,7 +720,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           buttonListTile("Registraci mám", screenWidth, () {
             setStateEnterPhone();
             OurAnalytics.logEvent(
-                name: OurAnalytics.I_HAVE_REGISTRATION,
+              name: OurAnalytics.I_HAVE_REGISTRATION,
             );
           }),
         ],

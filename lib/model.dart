@@ -194,11 +194,14 @@ class Request {
     if (fulfillmentDate != null) {
       int daysFrom = daysFromNow(fulfillmentDate);
       if (daysFrom == 0) {
-        result = 'Dnes ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+        result =
+            'Dnes ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
       } else if (daysFrom == -1) {
-        result = 'Včera ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+        result =
+            'Včera ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
       } else if (daysFrom == 1) {
-        result = 'Zítra ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
+        result =
+            'Zítra ' + DateFormat('kk:mm').format(fulfillmentDate.toLocal());
       } else {
         result = DateFormat('dd. MM. kk:mm').format(fulfillmentDate.toLocal());
       }

@@ -35,6 +35,7 @@ class APICallException implements Exception {
 
 class RestClient {
   static String BASE_URL = "https://pomuzeme-si-mobile-api.herokuapp.com";
+
   //static String token;
   static http.Client httpClient = new http.Client();
 

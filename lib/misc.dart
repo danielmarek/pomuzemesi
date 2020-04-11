@@ -37,10 +37,8 @@ int millisNow() {
   return DateTime.now().toUtc().millisecondsSinceEpoch;
 }
 
-void firebaseCloudMessagingSetUpListeners(
-    FirebaseMessaging firebaseMessaging,
-    {Function (Map<String, dynamic> message) onResume}
-    ) {
+void firebaseCloudMessagingSetUpListeners(FirebaseMessaging firebaseMessaging,
+    {Function(Map<String, dynamic> message) onResume}) {
   if (Platform.isIOS) iosPermission(firebaseMessaging);
 
   firebaseMessaging.getToken().then((token) {
@@ -74,7 +72,8 @@ int daysFromNow(DateTime date) {
       .inDays;
 }
 
-void sendEmailTo(BuildContext context, String recipient, String recipientKind) async {
+void sendEmailTo(
+    BuildContext context, String recipient, String recipientKind) async {
   String url = "mailto:$recipient";
   debugPrint("sendEmailTo, $url");
   bool success = false;
@@ -88,11 +87,11 @@ void sendEmailTo(BuildContext context, String recipient, String recipientKind) a
         null);
   }
   OurAnalytics.logEvent(
-      name: OurAnalytics.OPEN_EMAIL,
-      parameters: {
-        'success': success,
-        'recipient': recipientKind,
-      },
+    name: OurAnalytics.OPEN_EMAIL,
+    parameters: {
+      'success': success,
+      'recipient': recipientKind,
+    },
   );
 }
 
@@ -106,16 +105,14 @@ void sendSmsTo(BuildContext context, String phone, String recipientKind) async {
   } else {
     showDialogWithText(context, "Nepodařilo se otevřít SMS aplikaci.", null);
   }
-  OurAnalytics.logEvent(
-      name: OurAnalytics.OPEN_SMS,
-      parameters: {
-        'success': success,
-        'recipient': recipientKind,
-      }
-  );
+  OurAnalytics.logEvent(name: OurAnalytics.OPEN_SMS, parameters: {
+    'success': success,
+    'recipient': recipientKind,
+  });
 }
 
-void openPhoneCallTo(BuildContext context, String phone, String recipientKind) async {
+void openPhoneCallTo(
+    BuildContext context, String phone, String recipientKind) async {
   String url = "tel:$phone";
   debugPrint("openPhoneCallTo, $url");
   bool success = false;
@@ -126,11 +123,8 @@ void openPhoneCallTo(BuildContext context, String phone, String recipientKind) a
     showDialogWithText(
         context, "Nepodařilo se otevřít telefonní aplikaci.", null);
   }
-  OurAnalytics.logEvent(
-      name: OurAnalytics.OPEN_PHONECALL,
-      parameters: {
-        'success': success,
-        'recipient': recipientKind,
-      }
-  );
+  OurAnalytics.logEvent(name: OurAnalytics.OPEN_PHONECALL, parameters: {
+    'success': success,
+    'recipient': recipientKind,
+  });
 }

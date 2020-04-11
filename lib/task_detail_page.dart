@@ -54,18 +54,14 @@ class _DetailPageState extends State<DetailPage> {
           timeInSecForIosWeb: 1,
           backgroundColor: SECONDARY_COLOR,
           textColor: Colors.white,
-          fontSize: screenWidth * 0.04
-      );
+          fontSize: screenWidth * 0.04);
     } else {
-      showDialogWithText(context, err, (){});
+      showDialogWithText(context, err, () {});
     }
 
     OurAnalytics.logEvent(
         name: OurAnalytics.ACCEPT_REQUEST,
-        parameters: {
-          'success': err == null
-        }
-    );
+        parameters: {'success': err == null});
   }
 
   void declineTask() async {
@@ -73,15 +69,12 @@ class _DetailPageState extends State<DetailPage> {
     if (err == null) {
       Navigator.of(context).pop();
     } else {
-      showDialogWithText(context, err, (){});
+      showDialogWithText(context, err, () {});
     }
 
     OurAnalytics.logEvent(
         name: OurAnalytics.DECLINE_REQUEST,
-        parameters: {
-          'success': err == null
-        }
-    );
+        parameters: {'success': err == null});
   }
 
   @override

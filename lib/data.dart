@@ -150,7 +150,8 @@ class Data {
       } else if (r.myState == 'rejected') {
         rejected.add(r);
       } else if (r.myState == 'pending_notification' ||
-          r.myState == 'notified' || r.myState == 'to_be_notified') {
+          r.myState == 'notified' ||
+          r.myState == 'to_be_notified') {
         pending.add(r);
       }
     }

@@ -286,8 +286,8 @@ class CardBuilder {
     return l;
   }
 
-  static List<Widget> contactButtons(
-      BuildContext context, String email, String phone, String address, String recipientKind) {
+  static List<Widget> contactButtons(BuildContext context, String email,
+      String phone, String address, String recipientKind) {
     debugPrint("contactButtons: $email, $phone, $address");
     if (email == null && phone == null && address == null) {
       return <Widget>[];
@@ -387,7 +387,8 @@ class CardBuilder {
 
     List<Widget> widgets;
     if (request.myState == 'pending_notification' ||
-        request.myState == 'notified' || request.myState == 'to_be_notified') {
+        request.myState == 'notified' ||
+        request.myState == 'to_be_notified') {
       widgets = <Widget>[
         reject,
         SizedBox(width: screenWidth * 0.02),
@@ -550,15 +551,14 @@ class CardBuilder {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DetailPage(
-                      title: "Detail úkolu",
-                      request: request,
-                      cameFrom: cameFrom,
-                    ),
-                    settings: RouteSettings(
-                      name: routeName,
-                    )
-                  ),
+                      builder: (context) => DetailPage(
+                            title: "Detail úkolu",
+                            request: request,
+                            cameFrom: cameFrom,
+                          ),
+                      settings: RouteSettings(
+                        name: routeName,
+                      )),
                 ).then((_) {
                   onReturn();
                 });
