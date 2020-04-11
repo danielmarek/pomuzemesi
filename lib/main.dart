@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'dart:math';
 
+import 'analytics.dart';
 import 'data.dart';
 import 'db.dart';
 import 'misc.dart';
@@ -43,7 +44,7 @@ Widget _wrapWithBanner(Widget child) {
 }
 
 class PomuzemeSiApp extends StatelessWidget {
-  static FirebaseAnalytics analytics = FirebaseAnalytics();
+  static FirebaseAnalytics analytics = OurAnalytics.instance = FirebaseAnalytics();
   static FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
 
@@ -57,7 +58,13 @@ class PomuzemeSiApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.cyan,
       ),
-      home: MyHomePage(),
+      home: MyHomePage(tab: HOME_PAGE),
+      initialRoute: '/',
+      routes: {
+        '/$ROUTE_NEW_REQUESTS' : (context) =>  MyHomePage(tab: REQUESTS_PAGE),
+        '/$ROUTE_PROFILE' : (context) =>  MyHomePage(tab: PROFILE_PAGE),
+        '/$ROUTE_ABOUT' : (context) =>  MyHomePage(tab: ABOUT_PAGE),
+      }
     );
   }
 }
@@ -75,13 +82,17 @@ enum HomePageState {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key}) : super(key: key);
+  final int tab;
+  MyHomePage({this.tab, Key key}) : super(key: key);
 
   @override
   MyHomePageState createState() => MyHomePageState();
 }
 
+HomePageState homePageState;
+
 class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+  // FIXME
   FirebaseMessaging firebaseMessaging = FirebaseMessaging();
   double screenWidth;
 
@@ -91,12 +102,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   TextEditingController controllerSMS = new TextEditingController();
 
   String fcmToken, phoneNumber;
-  bool loaded = false;
+  static bool loaded = false;
+  static HomePageState homePageState;
 
   //bool registrationDone = false;
-  int currentPage = HOME_PAGE;
+  static int currentPage = HOME_PAGE;
 
-  HomePageState homePageState = HomePageState.enterPhone;
+  //static HomePageState homePageState;
 
   //final _formKey = GlobalKey<FormState>();
 
@@ -119,9 +131,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    currentPage = widget.tab;
     WidgetsBinding.instance.addObserver(this);
     firebaseCloudMessagingSetUpListeners(firebaseMessaging);
-    setStateBlockingFetchAll();
+    if (homePageState == null) {
+      setStateBlockingFetchAll();
+    }
   }
 
   @override
@@ -129,6 +144,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     controllerPhoneNumber.dispose();
     controllerSMS.dispose();
+    if (pollingTimer != null) {
+      pollingTimer.cancel();
+    }
     super.dispose();
   }
 
@@ -216,10 +234,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void askForSMS({bool manualRetry = false}) async {
+    bool success = false;
     try {
       // TODO: captcha token.
       await RestClient.sessionNew(phoneNumber, 'foobar', fcmToken);
       setStateEnterSMS();
+      success = true;
     } on APICallException catch (e) {
       if (e.errorCode == 404) {
         setStateEnterPhone().then((_) {
@@ -240,6 +260,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         }
       }
     }
+    OurAnalytics.logEvent(
+        name: manualRetry ? OurAnalytics.RESEND_SMS_CODE : OurAnalytics.SUBMIT_PHONE_NUMBER,
+        parameters: {
+          'success' : success,
+        }
+    );
   }
 
   /*void setStateEnterRegistrationDetails() {
@@ -282,6 +308,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void submitSMSCode(String smsCode) async {
+    bool success = false;
     try {
       String t = await RestClient.sessionCreate(phoneNumber, smsCode);
       TokenWrapper.saveToken(t);
@@ -291,6 +318,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             showNotificationsPreset = true;
             setStateBlockingFetchAll();
           });
+      success = true;
     } on APICallException catch (e) {
       if (e.errorCode == 401) {
         setStateEnterSMS().then((_) {
@@ -311,9 +339,16 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         });
       }
     }
+    OurAnalytics.logEvent(
+        name: OurAnalytics.SUBMIT_SMS_CODE,
+        parameters: {
+          'success' : success,
+        }
+    );
   }
 
   Future<bool> setStateBlockingFetchAll() async {
+    debugPrint("SET STATE blockingFetchAll");
     setState(() {
       homePageState = HomePageState.blockingFetchAll;
     });
@@ -360,12 +395,18 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _onRefresh() async {
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(Duration(milliseconds: 500));
     Data.updateAllAndThen((e) {
       setLastRefreshError(e);
       if (e == null) {
         backoffTime = STALENESS_LIMIT_MS;
       }
+      OurAnalytics.logEvent(
+        name: OurAnalytics.MANUAL_REFRESH,
+        parameters: {
+          'success': e == null,
+        },
+      );
       setState(() {});
     });
   }
@@ -438,9 +479,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void switchToPage(int index) {
-    setState(() {
-      currentPage = index;
-    });
+    //Navigator.pushNamed(context, '/${ROUTES[index]}');
+    Navigator.pushReplacementNamed(context, '/${ROUTES[index]}');
   }
 
   Widget settingsPageBody() {
@@ -468,7 +508,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void sendFeedback() async {
-    sendEmailTo(context, FEEDBACK_MAILBOX);
+    sendEmailTo(context, FEEDBACK_MAILBOX, OurAnalytics.RECIPIENT_DEVELOPER);
   }
 
   Widget aboutBody() {
@@ -588,7 +628,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     Widget body;
     switch (currentPage) {
       case HOME_PAGE:
-      case TASKS_PAGE:
+      case REQUESTS_PAGE:
         /*
         body = LiquidPullToRefresh(
           child: (Data.acceptedRequests.length == 0 && currentPage == HOME_PAGE)
@@ -670,6 +710,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           SizedBox(height: screenWidth * 0.1),
           buttonListTile("Registraci mám", screenWidth, () {
             setStateEnterPhone();
+            OurAnalytics.logEvent(
+                name: OurAnalytics.I_HAVE_REGISTRATION,
+            );
           }),
         ],
       ),

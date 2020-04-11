@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'dart:io';
 
+import 'analytics.dart';
+
 // TODO this may want its own mailbox?
 String FEEDBACK_MAILBOX = 'info@pomuzeme.si';
 
@@ -16,7 +18,7 @@ Color SECONDARY_COLOR2 = Color(0xffcf832d);
 
 // Page keys in BottomNavigationBar.
 const int HOME_PAGE = 0;
-const int TASKS_PAGE = 1;
+const int REQUESTS_PAGE = 1;
 const int PROFILE_PAGE = 2;
 const int ABOUT_PAGE = 3;
 
@@ -71,36 +73,63 @@ int daysFromNow(DateTime date) {
       .inDays;
 }
 
-void sendEmailTo(BuildContext context, String recipient) async {
+void sendEmailTo(BuildContext context, String recipient, String recipientKind) async {
   String url = "mailto:$recipient";
   debugPrint("sendEmailTo, $url");
+  bool success = false;
   if (await canLaunch(url)) {
     await launch(url);
+    success = true;
   } else {
     showDialogWithText(
         context,
         "Nepodařilo se otevřít e-mailovou aplikaci. Máte ji nainstalovanou a nastavenou?",
         null);
   }
+  OurAnalytics.logEvent(
+      name: OurAnalytics.OPEN_EMAIL,
+      parameters: {
+        'success': success,
+        'recipient': recipientKind,
+      },
+  );
 }
 
-void sendSmsTo(BuildContext context, String phone) async {
+void sendSmsTo(BuildContext context, String phone, String recipientKind) async {
   String url = "sms:$phone";
   debugPrint("sendSmsTo, $url");
+  bool success = false;
   if (await canLaunch(url)) {
     await launch(url);
+    success = true;
   } else {
     showDialogWithText(context, "Nepodařilo se otevřít SMS aplikaci.", null);
   }
+  OurAnalytics.logEvent(
+      name: OurAnalytics.OPEN_SMS,
+      parameters: {
+        'success': success,
+        'recipient': recipientKind,
+      }
+  );
 }
 
-void openPhoneCallTo(BuildContext context, String phone) async {
+void openPhoneCallTo(BuildContext context, String phone, String recipientKind) async {
   String url = "tel:$phone";
   debugPrint("openPhoneCallTo, $url");
+  bool success = false;
   if (await canLaunch(url)) {
     await launch(url);
+    success = true;
   } else {
     showDialogWithText(
         context, "Nepodařilo se otevřít telefonní aplikaci.", null);
   }
+  OurAnalytics.logEvent(
+      name: OurAnalytics.OPEN_PHONECALL,
+      parameters: {
+        'success': success,
+        'recipient': recipientKind,
+      }
+  );
 }

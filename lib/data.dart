@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'analytics.dart';
 import 'model.dart';
 import 'rest_client.dart';
 
@@ -100,6 +101,13 @@ class Data {
     if (then != null) {
       then(err);
     }
+    OurAnalytics.logEvent(
+        name: OurAnalytics.TOGGLE_NOTIFICATIONS,
+        parameters: {
+          'success' : err == null,
+          'new_setting': newSetting,
+        }
+    );
   }
 
   static int dataAge() {
@@ -238,9 +246,10 @@ class TokenWrapper {
     return r.recString;
   }
 
-  static void saveToken(String t) {
+  static Future<bool> saveToken(String t) async {
     token = t;
-    setToken(t);
+    await setToken(t);
+    return true;
   }
 
   static Future<bool> load() async {
@@ -283,7 +292,19 @@ class TokenWrapper {
     }
     debugPrint("WILL TRY TO REFRESH TOKEN");
     tsLastTimeTriedToRefresh = secondsNow;
-    String t = await RestClient.refreshToken();
-    saveToken(t);
+    bool success = false;
+    try {
+      String t = await RestClient.refreshToken();
+      await saveToken(t);
+      success = true;
+    } catch(e) {
+      debugPrint('Failed to refresh token');
+    }
+    OurAnalytics.logEvent(
+      name: OurAnalytics.TOKEN_REFRESH,
+      parameters: {
+        'success' : success,
+      }
+    );
   }
 }
