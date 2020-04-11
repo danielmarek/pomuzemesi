@@ -34,9 +34,9 @@ dependencies:
   #webview_flutter: 0.3.19+9
   #flutter_webview_plugin: 0.3.10+2
   intl: 0.16.1
-  #flutter_email_sender: 3.0.1
   flutter_secure_storage: 3.3.1+1
   jaguar_jwt: 2.1.6
+  fluttertoast: 4.0.1
 
 dev_dependencies:
   flutter_launcher_icons: "^0.7.4"
