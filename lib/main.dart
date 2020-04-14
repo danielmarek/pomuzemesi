@@ -43,15 +43,66 @@ Widget _wrapWithBanner(Widget child) {
   );
 }
 
-class PomuzemeSiApp extends StatelessWidget {
+class PomuzemeSiApp extends StatefulWidget {
+  PomuzemeSiAppState createState() => PomuzemeSiAppState();
+}
+
+class PomuzemeSiAppState extends State<PomuzemeSiApp> {
   static FirebaseAnalytics analytics =
       OurAnalytics.instance = FirebaseAnalytics();
   static FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
+  final FirebaseMessaging firebaseMessaging = FirebaseMessaging();
+  final GlobalKey<NavigatorState> navigatorKey =
+      new GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    firebaseCloudMessagingSetUpListeners(
+      firebaseMessaging,
+      onResume: onFCMResume,
+    );
+  }
+
+  Future<dynamic> onFCMResume(Map<String, dynamic> message) {
+    debugPrint('Firebase: onResume(): $message');
+    if (!message.containsKey('data') || message['data'] == null) {
+      debugPrint("FCM message doesn't contain the data key.");
+      return null;
+    }
+    var data = message['data'];
+    if (!data.containsKey('request_id') || data['request_id'] == null) {
+      debugPrint("FCM message doesn't contain the data/request_id key.");
+      return null;
+    }
+    var requestID = data['request_id'];
+    int rid = int.parse(requestID.toString());
+    debugPrint("FCM message concerning request: $rid");
+    bool isAcceptedRequest = false;
+    if (Data.acceptedRequests != null) {
+      for (Request r in Data.acceptedRequests) {
+        if (r.id == rid) {
+          isAcceptedRequest = true;
+          break;
+        }
+      }
+    }
+    if (isAcceptedRequest) {
+      debugPrint(
+          "This is an accepted request, routing to /, context: ${context.toString()}");
+      navigatorKey.currentState.pushReplacementNamed('/');
+    } else {
+      debugPrint(
+          "This is not an accepted request, routing to /$ROUTE_NEW_REQUESTS");
+      navigatorKey.currentState.pushReplacementNamed('/$ROUTE_NEW_REQUESTS');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        navigatorKey: navigatorKey,
         navigatorObservers: [
           FirebaseAnalyticsObserver(analytics: analytics),
         ],
@@ -59,12 +110,15 @@ class PomuzemeSiApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.cyan,
         ),
-        home: MyHomePage(tab: HOME_PAGE),
+        home: MyHomePage(tab: HOME_PAGE, firebaseMessaging: firebaseMessaging),
         initialRoute: '/',
         routes: {
-          '/$ROUTE_NEW_REQUESTS': (context) => MyHomePage(tab: REQUESTS_PAGE),
-          '/$ROUTE_PROFILE': (context) => MyHomePage(tab: PROFILE_PAGE),
-          '/$ROUTE_ABOUT': (context) => MyHomePage(tab: ABOUT_PAGE),
+          '/$ROUTE_NEW_REQUESTS': (context) => MyHomePage(
+              tab: REQUESTS_PAGE, firebaseMessaging: firebaseMessaging),
+          '/$ROUTE_PROFILE': (context) => MyHomePage(
+              tab: PROFILE_PAGE, firebaseMessaging: firebaseMessaging),
+          '/$ROUTE_ABOUT': (context) =>
+              MyHomePage(tab: ABOUT_PAGE, firebaseMessaging: firebaseMessaging),
         });
   }
 }
@@ -83,8 +137,9 @@ enum HomePageState {
 
 class MyHomePage extends StatefulWidget {
   final int tab;
+  final FirebaseMessaging firebaseMessaging;
 
-  MyHomePage({this.tab, Key key}) : super(key: key);
+  MyHomePage({this.tab, this.firebaseMessaging, Key key}) : super(key: key);
 
   @override
   MyHomePageState createState() => MyHomePageState();
@@ -93,8 +148,6 @@ class MyHomePage extends StatefulWidget {
 HomePageState homePageState;
 
 class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
-  // FIXME
-  FirebaseMessaging firebaseMessaging = FirebaseMessaging();
   double screenWidth;
 
   final _formEnterPhoneKey = GlobalKey<FormState>();
@@ -129,20 +182,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     _appLifecycleState = state;
   }
 
-  Future<dynamic> onFCMResume(Map<String, dynamic> message) {
-    print('firebase: onResume(): $message');
-    //Navigator.pushReplacementNamed(context, '/');
-  }
-
   @override
   void initState() {
     super.initState();
     currentPage = widget.tab;
     WidgetsBinding.instance.addObserver(this);
-    firebaseCloudMessagingSetUpListeners(
-      firebaseMessaging,
-      onResume: onFCMResume,
-    );
     if (homePageState == null) {
       setStateBlockingFetchAll();
     }
@@ -730,7 +774,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   Widget buildEnterPhoneNumber() {
     // FIXME race condition
-    firebaseMessaging.getToken().then((firebaseToken) {
+    widget.firebaseMessaging.getToken().then((firebaseToken) {
       fcmToken = firebaseToken;
       print("Firebase token: $firebaseToken");
     });
@@ -862,7 +906,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     // DEBUG
-    firebaseMessaging.getToken().then((firebaseToken) {
+    widget.firebaseMessaging.getToken().then((firebaseToken) {
       print("Firebase token: $firebaseToken");
     });
     debugPrint("build: auth token: ${TokenWrapper.token}");
