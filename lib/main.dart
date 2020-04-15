@@ -33,6 +33,7 @@ class MyProxyHttpOverride extends HttpOverrides {
 }
 
 void main() {
+  HttpOverrides.global = MyProxyHttpOverride();
   WidgetsFlutterBinding.ensureInitialized();
   Crashlytics.instance.enableInDevMode = true;
   FlutterError.onError = Crashlytics.instance.recordFlutterError;
