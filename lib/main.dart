@@ -28,7 +28,9 @@ class MyProxyHttpOverride extends HttpOverrides {
     return super.createHttpClient(context)
       ..findProxy = (uri) {
         return "PROXY 192.168.56.1:8088;";
-      };
+      }
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }
 
