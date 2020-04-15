@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
 
 import 'analytics.dart';
 import 'data.dart';
@@ -20,6 +21,16 @@ import 'rest_client.dart';
 import 'widget_misc.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics();
+
+class MyProxyHttpOverride extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext context) {
+    return super.createHttpClient(context)
+      ..findProxy = (uri) {
+        return "PROXY 192.168.56.1:8088;";
+      };
+  }
+}
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
