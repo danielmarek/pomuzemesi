@@ -87,7 +87,9 @@ BottomNavigationBar bottomNavBar(BuildContext context, int pageId,
     selectedItemColor: Colors.white,
     unselectedItemColor: Color.fromARGB(189, 255, 255, 255),
     onTap: (index) {
-      switchToTab(index);
+      if (index != pageId) {
+        switchToTab(index);
+      }
     },
   );
 }
