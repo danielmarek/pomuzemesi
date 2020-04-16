@@ -87,7 +87,9 @@ BottomNavigationBar bottomNavBar(BuildContext context, int pageId,
     selectedItemColor: Colors.white,
     unselectedItemColor: Color.fromARGB(189, 255, 255, 255),
     onTap: (index) {
-      switchToTab(index);
+      if (index != pageId) {
+        switchToTab(index);
+      }
     },
   );
 }
@@ -353,7 +355,11 @@ class CardBuilder {
         contactItems.add(Text(phone));
       }
       if (address != null) {
-        contactItems.add(Text(address));
+        if (request.address != null && request.address.street != null) {
+          contactItems.add(Text(address));
+        } else {
+          contactItems.add(Text("Orientační adresa: $address"));
+        }
       }
 
       l.addAll(<Widget>[
@@ -369,6 +375,7 @@ class CardBuilder {
                 title: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: contactItems)),
+            SizedBox(height: screenWidth * 0.03),
           ] +
           contactButtons(context, email, phone, address, recipientKind));
     }

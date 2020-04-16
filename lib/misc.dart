@@ -7,8 +7,7 @@ import 'dart:io';
 
 import 'analytics.dart';
 
-// TODO this may want its own mailbox?
-String FEEDBACK_MAILBOX = 'info@pomuzeme.si';
+String FEEDBACK_MAILBOX = 'support@pomuzeme.si';
 
 //Color PRIMARY_COLOR = Color(0xff64cde3);
 Color PRIMARY_COLOR = Color(0xff6ecee1);

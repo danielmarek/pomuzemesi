@@ -16,6 +16,7 @@ import 'data.dart';
 import 'db.dart';
 import 'misc.dart';
 import 'model.dart';
+import 'poller.dart';
 import 'rest_client.dart';
 import 'widget_misc.dart';
 
@@ -167,20 +168,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   //final _formKey = GlobalKey<FormState>();
 
   //FormControllers controllers = FormControllers();
-
-  Timer pollingTimer;
-
-  AppLifecycleState _appLifecycleState;
-
-  String lastExplicitRefreshError;
-  double backoffTime = 10.0;
-  Random random = Random();
   bool showNotificationsPreset = false;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    _appLifecycleState = state;
-  }
+  Timer refreshTimer;
+  int lastRefreshedRequestsTs = 0;
 
   @override
   void initState() {
@@ -190,6 +180,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     if (homePageState == null) {
       setStateBlockingFetchAll();
     }
+    startRefreshTimer();
   }
 
   @override
@@ -197,8 +188,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     controllerPhoneNumber.dispose();
     controllerSMS.dispose();
-    if (pollingTimer != null) {
-      pollingTimer.cancel();
+    if (refreshTimer != null) {
+      refreshTimer.cancel();
     }
     super.dispose();
   }
@@ -215,46 +206,30 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     return true;
   }*/
 
-  static bool isInForeground(AppLifecycleState state) {
-    return (state == null || state.index == null || state.index == 0);
+  void startRefreshTimer() {
+    if (refreshTimer == null) {
+      refreshTimer = Timer.periodic(Duration(milliseconds: 500), (t) {
+        refreshTimerTick();
+      });
+    }
   }
 
-  void startPollingTimer() {
-    pollingTimer = Timer.periodic(Duration(seconds: 2), (t) {
-      timerTick();
-    });
-  }
-
-  void timerTick() async {
+  void refreshTimerTick() async {
+    debugPrint("RefreshTimer tick");
     if (homePageState != HomePageState.ready) {
       return;
     }
-    int tokenValidSeconds = TokenWrapper.tokenValidSeconds(TokenWrapper.token);
-    debugPrint("TOKEN VALID FOR: $tokenValidSeconds s");
-    if (tokenValidSeconds < REFRESH_TOKEN_BEFORE) {
-      TokenWrapper.maybeTryToRefresh();
-      return;
-    }
-
-    bool inForeground = isInForeground(_appLifecycleState);
-    debugPrint("Timer tick, inForeground: $inForeground");
-    if (inForeground) {
-      Data.maybePollAndThen(backoffTime, (e) {
-        // Only clear up the bar when we manage to fetch data after it
-        // previously failed manually, but don't spam this with auto-refresh
-        // failures.
-        if (e == null) {
-          debugPrint("Poll successful.");
-          setLastRefreshError(e);
-          backoffTime = STALENESS_LIMIT_MS;
-        } else {
-          debugPrint("Poll failed.");
-          backoffTime =
-              backoffTime * 3 + (backoffTime * random.nextInt(100) * 0.01);
-        }
-        setState(() {});
+    if (Data.requestsTs > lastRefreshedRequestsTs) {
+      debugPrint("RefreshTimer setState()");
+      setState(() {
+        lastRefreshedRequestsTs = Data.requestsTs;
       });
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    Poller.appLifecycleState = state;
   }
 
   Future<bool> setStateHaveRegistration() async {
@@ -333,8 +308,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     homePageState = HomePageState.ready;
     Data.maybeInitFromDb().then((_) {
       setState(() {});
-      if (pollingTimer == null) {
-        startPollingTimer();
+      Poller.startPollingTimerIfNotRunning();
+      if (refreshTimer == null) {
+        startRefreshTimer();
       }
       if (showNotificationsPreset) {
         showDialogWithText(
@@ -416,7 +392,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       return true;
     }
     Data.updateAllAndThen((e) {
-      setLastRefreshError(e);
+      Poller.setLastRefreshError(e);
       setStateReady();
     });
     return true;
@@ -436,21 +412,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     );
   }
 
-  void setLastRefreshError(APICallException e) {
-    debugPrint("setLastRefreshError $e");
-    if (e == null) {
-      lastExplicitRefreshError = null;
-    } else {
-      lastExplicitRefreshError = e.cause;
-    }
-  }
-
   Future<void> _onRefresh() async {
     await Future.delayed(Duration(milliseconds: 500));
     Data.updateAllAndThen((e) {
-      setLastRefreshError(e);
+      Poller.setLastRefreshError(e);
       if (e == null) {
-        backoffTime = STALENESS_LIMIT_MS;
+        Poller.backoffTime = STALENESS_LIMIT_MS;
       }
       OurAnalytics.logEvent(
         name: OurAnalytics.MANUAL_REFRESH,
@@ -473,7 +440,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         bland: bland,
         onReturn: () {
           Data.updateAllAndThen((e) {
-            setLastRefreshError(e);
+            Poller.setLastRefreshError(e);
             setState(() {});
           });
         },
@@ -577,7 +544,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         },
       ),
       ListTile(
-        title: Text("Privacy Policy"),
+        title: Text("Podmínky ochrany osobních údajů"),
         onTap: () {
           launch(
               "https://pomuzeme.si/podminky_ochrany_osobnich_udaju_pomuzemesi.pdf");
@@ -611,7 +578,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   List<Widget> topBar() {
-    debugPrint("TOPBAR: $lastExplicitRefreshError");
+    debugPrint("TOPBAR: ${Poller.lastExplicitRefreshError}");
     Color textColor = Color.fromRGBO(0, 0, 0, 0.38);
     Color boxBkg = Color.fromRGBO(240, 240, 240, 1.0);
     EdgeInsets insets = EdgeInsets.all(screenWidth * 0.015);
@@ -632,7 +599,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     );
 
     List<Widget> l = List<Widget>();
-    if (lastExplicitRefreshError != null) {
+    if (Poller.lastExplicitRefreshError != null) {
       l.add(SizedBox(
           width: screenWidth,
           child: DecoratedBox(
@@ -645,7 +612,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                      Text(lastExplicitRefreshError, style: tsError),
+                      Text(Poller.lastExplicitRefreshError, style: tsError),
                     ])),
               ))));
     }
@@ -709,10 +676,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
 
     List<String> pageTitles = [
-      "Pomůžeme.si: Moje Úkoly",
-      "Pomůžeme.si: Poptávky",
-      "Pomůžeme.si: Profil",
-      "Pomůžeme.si: O Aplikaci"
+      "Moje Úkoly",
+      "Poptávky",
+      "Profil",
+      "O Aplikaci"
     ];
 
     return Scaffold(

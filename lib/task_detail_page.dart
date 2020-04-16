@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'analytics.dart';
 import 'model.dart';
+import 'poller.dart';
 import 'rest_client.dart';
 import 'widget_misc.dart';
 
@@ -24,8 +25,13 @@ class DetailPage extends StatefulWidget {
   _DetailPageState createState() => _DetailPageState();
 }
 
-class _DetailPageState extends State<DetailPage> {
+class _DetailPageState extends State<DetailPage> with WidgetsBindingObserver {
   double screenWidth;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    Poller.appLifecycleState = state;
+  }
 
   Future<String> respondToTask(bool accept) async {
     // TODO HTTP 409: REQUEST_CAPACITY_EXCEEDED
