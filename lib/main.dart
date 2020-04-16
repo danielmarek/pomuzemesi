@@ -577,7 +577,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         },
       ),
       ListTile(
-        title: Text("Privacy Policy"),
+        title: Text("Podmínky ochrany osobních údajů"),
         onTap: () {
           launch(
               "https://pomuzeme.si/podminky_ochrany_osobnich_udaju_pomuzemesi.pdf");
