@@ -369,6 +369,7 @@ class CardBuilder {
                 title: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: contactItems)),
+            SizedBox(height: screenWidth * 0.03),
           ] +
           contactButtons(context, email, phone, address, recipientKind));
     }
