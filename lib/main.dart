@@ -709,10 +709,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
 
     List<String> pageTitles = [
-      "Pomůžeme.si: Moje Úkoly",
-      "Pomůžeme.si: Poptávky",
-      "Pomůžeme.si: Profil",
-      "Pomůžeme.si: O Aplikaci"
+      "Moje Úkoly",
+      "Poptávky",
+      "Profil",
+      "O Aplikaci"
     ];
 
     return Scaffold(
