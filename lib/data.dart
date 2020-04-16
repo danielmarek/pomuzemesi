@@ -268,7 +268,7 @@ class TokenWrapper {
       final parts = token.split('.');
       final payload = parts[1];
       final String decodedToken = B64urlEncRfc7515.decodeUtf8(payload);
-      debugPrint("TOKEN: $decodedToken");
+      //debugPrint("TOKEN: $decodedToken");
       var r = json.decode(decodedToken);
       int expiration = r['exp'];
       int secondsNow = (millisNow() / 1000.0).toInt();
