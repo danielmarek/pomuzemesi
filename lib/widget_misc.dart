@@ -355,7 +355,11 @@ class CardBuilder {
         contactItems.add(Text(phone));
       }
       if (address != null) {
-        contactItems.add(Text(address));
+        if (request.address != null && request.address.street != null) {
+          contactItems.add(Text(address));
+        } else {
+          contactItems.add(Text("Orientační adresa: $address"));
+        }
       }
 
       l.addAll(<Widget>[
