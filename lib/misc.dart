@@ -71,9 +71,10 @@ int daysFromNow(DateTime date) {
       .inDays;
 }
 
-void sendEmailTo(
-    BuildContext context, String recipient, String recipientKind) async {
-  String url = "mailto:$recipient";
+void sendEmailTo(BuildContext context, String recipient, String recipientKind,
+    {String subject = ''}) async {
+  String subjectEnc = Uri.encodeFull(subject);
+  String url = "mailto:$recipient?subject=$subjectEnc";
   debugPrint("sendEmailTo, $url");
   bool success = false;
   if (await canLaunch(url)) {

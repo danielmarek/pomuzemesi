@@ -526,7 +526,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void sendFeedback() async {
-    sendEmailTo(context, FEEDBACK_MAILBOX, OurAnalytics.RECIPIENT_DEVELOPER);
+    sendEmailTo(context, FEEDBACK_MAILBOX, OurAnalytics.RECIPIENT_DEVELOPER,
+        subject: 'Zpětná vazba na mobilní aplikaci');
   }
 
   Widget aboutBody() {
