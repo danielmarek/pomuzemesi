@@ -1,34 +1,34 @@
 {
   "project_info": {
-    "project_number": "787842493805",
-    "firebase_url": "https://pomuzemesi-mobile-dev.firebaseio.com",
-    "project_id": "pomuzemesi-mobile-dev",
-    "storage_bucket": "pomuzemesi-mobile-dev.appspot.com"
+    "project_number": "369415286358",
+    "firebase_url": "https://pomuzemesi-mobile.firebaseio.com",
+    "project_id": "pomuzemesi-mobile",
+    "storage_bucket": "pomuzemesi-mobile.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:787842493805:android:855e7ae3e2a6b80322fe64",
+        "mobilesdk_app_id": "1:369415286358:android:0bb4081717bbecd9ed95f7",
         "android_client_info": {
           "package_name": "cz.applifting.pomuzemesi"
         }
       },
       "oauth_client": [
         {
-          "client_id": "787842493805-m3cb0leriit29jjinp9lo5p8lj6atn20.apps.googleusercontent.com",
+          "client_id": "369415286358-qtumrunhertuhfhgtcf8jkntuq1cbt1e.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBWIQ7F1I9qiy45RLuFG00ZrVFjuNKUZ5g"
+          "current_key": "AIzaSyBNQjJN5w7aBcRZjL7Sthwt1q7PUJaiEno"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "787842493805-m3cb0leriit29jjinp9lo5p8lj6atn20.apps.googleusercontent.com",
+              "client_id": "369415286358-qtumrunhertuhfhgtcf8jkntuq1cbt1e.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
